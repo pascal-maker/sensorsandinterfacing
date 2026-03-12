@@ -70,4 +70,8 @@ except KeyboardInterrupt:
 #Inside the loop we reset value to 0, because we want to build the digit again from scratch.
 #Then we loop over the 4 pins. For each pin we read its input and invert it with 1 - GPIO.input(pin) so that pressed becomes 1 and not pressed becomes 0.
 #Then we put each bit in the correct place with bit << i and add it to value using |=.
-#After that, if value <= 9, it is a valid BCD digit. If it is different from the previous value, we print it. If it is bigger than 9, it is not a valid BCD number.                   
+#After that, if value <= 9, it is a valid BCD digit. If it is different from the previous value, we print it. If it is bigger than 9, it is not a valid BCD number.  
+
+# Read each GPIO input, invert it because pull-up logic makes pressed = 0,
+# then shift that bit to the correct BCD position (1, 2, 4, 8) and combine
+# it into the final value using bitwise OR.                 
