@@ -135,3 +135,5 @@ except KeyboardInterrupt:
 
     # Reset GPIO cleanly
     GPIO.cleanup()
+    
+    ##We use the callback function to update the BCD value whenever one of the BCD input pins changes, so the Pi knows the new value immediately without constant polling. The lock is there because both the callback and the while loop use bcd_value, so it makes sure only one of them accesses or changes it at a time.
