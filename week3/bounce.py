@@ -21,3 +21,8 @@ try:
 except KeyboardInterrupt:
     GPIO.remove_event_detect(BUTTON_PIN)
     GPIO.cleanup()        
+    
+    
+# This script uses interrupt-based edge detection instead of polling.
+# GPIO watches the button pin in the background and runs the callback
+# when a falling edge is detected. Bouncetime is used to debounce the button.    
