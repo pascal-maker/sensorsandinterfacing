@@ -35,3 +35,7 @@ try:
 # Stop the program safely when Ctrl+C is pressed
 except KeyboardInterrupt:
     bus.close()
+
+#This script starts by using I²C bus 1 on the Raspberry Pi. Then we set the address of the ADS7830 chip, which is 0x48. After that, we make a function that reads one channel from the ADS7830.
+# Inside that function, we send a command byte to the ADC to tell it which channel to read, and the ADC sends back one value. That value is an 8-bit ADC number between 0 and 255. Then the script converts that ADC value into a voltage.
+# In the loop, it keeps reading the channel, printing the ADC number and the voltage again and again.    
