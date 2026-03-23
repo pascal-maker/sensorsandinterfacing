@@ -29,7 +29,7 @@ try:
             if press_start_time is not None:#ishiereeerdereenstartijdo[geslagen]
                 press_end_time = time.time()#tijdstipvannumomentknoplosgelaten
                 duration = press_end_time - press_start_time#duur
-                readable_time = time.strftime("%Y-%m-%d %h:%M:S",time.localtime(press_start_time))#omzettennaareenleesbaretijd
+                readable_time = time.strftime("%Y-%m-%d %H:%M:S",time.localtime(press_start_time))#omzettennaareenleesbaretijd
                 
                 rows.append([readable_time,duration])
                 print("Button released - duration:",duration)
