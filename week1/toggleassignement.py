@@ -1,39 +1,36 @@
-import RPi.GPIO as GPIO
+from RPi import GPIO
 import time
+btn = 20
+led = 17
+previous_state = 1 # 1 means button is not pressed
+led_state = False # False means LED is OFF
+GPIO.setmode(GPIO.BCM)
 
-btn = 20                  # Button is connected to GPIO20
-led = 17                  # LED is connected to GPIO17
+GPIO.setup(btn,GPIO.IN ,pull_up_down=GPIO.PUD_UP)
 
-GPIO.setmode(GPIO.BCM)    # Use BCM pin numbering
-GPIO.setup(btn, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # Button as input with pull-up resistor
-GPIO.setup(led, GPIO.OUT) # LED as output
-
-led_state = False         # Start with LED off
-previous_btn_state = GPIO.input(btn)  # Remember the button's initial state
+GPIO.setup(led,GPIO.OUT)
 
 try:
     while True:
-        current_btn_state = GPIO.input(btn)  # Read the button's current state
+                current_state = GPIO.input(btn)# 0 means button is pressed
+               
+                if previous_state ==1 and current_state == 0:# button is pressed
+                    led_state = not led_state
+                    if led_state:
+                        print("LED is ON")
+                        GPIO.output(led,GPIO.HIGH)
+                    else:
+                        print("LED is OFF")
+                        GPIO.output(led,GPIO.LOW)
+                previous_state = current_state
+                time.sleep(0.1)
+                
 
-        # Detect a new button press:
-        # previous state was 1 (not pressed)
-        # current state is 0 (pressed)
-        if previous_btn_state == 1 and current_btn_state == 0:
-            led_state = not led_state        # Flip LED state: off->on or on->off
-            GPIO.output(led, led_state)      # Apply the new LED state
-            print(f"Button pressed -> LED is now {'ON' if led_state else 'OFF'}")
-            time.sleep(0.2)                  # Small delay to avoid button bounce
-
-        previous_btn_state = current_btn_state  # Save current state for next loop
-        time.sleep(0.01)                       # Tiny pause to reduce CPU usage
-
-except KeyboardInterrupt:
-    pass
-
-finally:
-    GPIO.cleanup()         # Reset all GPIO pins when program stops
+     
     
-
-#The program uses led_state to remember whether the LED is on or off.
-#It stores the previous button state and compares it with the current button state.
-#When the button changes from 1 to 0, this means the button was pressed, so the LED state is toggled.    
+finally:
+    GPIO.cleanup()    
+    
+  
+        
+    
