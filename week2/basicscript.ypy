@@ -1,0 +1,32 @@
+import time
+import RPi.GPIO as GPIO
+
+GPIO.setmode(GPIO.BCM)
+led_pin = 17
+button_pin = 20
+
+GPIO.setup(led_pin, GPIO.OUT)
+GPIO.setup(button_pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+led_state = GPIO.LOW #this just in the setip led is alwys off and for toggling
+previous_button_state = GPIO.HIGH #this just in the setip button is alwys high so here it means not pressed
+n_presses = 0
+GPIO.output(led_pin, led_state)#led is alwys off
+
+try:
+    while True:
+        current_button_state = GPIO.input(button_pin)#read the current button
+        if previous_button_state == GPIO.HIGH and current_button_state == GPIO.LOW: # if previous button was not pressed and button now is pressed
+            led_state = not led_state # toggle the led state
+            n_presses += 1 # increment the number of presses
+            print(f"Button pressed {n_presses} times")
+            print(f"LED state: {'ON' if led_state else 'OFF'}")
+
+            time.sleep(0.2)
+
+        previous_button_state = current_button_state # update the previous button state
+            
+
+except KeyboardInterrupt:
+    pass
+finally:
+    GPIO.cleanup()
