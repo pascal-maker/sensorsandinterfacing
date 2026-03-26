@@ -1,36 +1,32 @@
-from RPi import GPIO
+import RPi.GPIO as GPIO
 import time
-btn = 20
-led = 17
-previous_state = 1 # 1 means button is not pressed
-led_state = False # False means LED is OFF
+BUTTON = 20
+LED = 17
+
 GPIO.setmode(GPIO.BCM)
+GPIO.setup(BUTTON,GPIO.IN,pull_up_down=GPIO.PUD_UP)
 
-GPIO.setup(btn,GPIO.IN ,pull_up_down=GPIO.PUD_UP)
-
-GPIO.setup(led,GPIO.OUT)
+previous_state = GPIO.HIGH#beforetheloop starts, we assume the button is not pressed
+#with PUD_UP, a button that is not pressed reads HIGH
+led_state = GPIO.LOW#the led starts as off
 
 try:
     while True:
-                current_state = GPIO.input(btn)# 0 means button is pressed
-               
-                if previous_state ==1 and current_state == 0:# button is pressed
-                    led_state = not led_state
-                    if led_state:
-                        print("LED is ON")
-                        GPIO.output(led,GPIO.HIGH)
-                    else:
-                        print("LED is OFF")
-                        GPIO.output(led,GPIO.LOW)
-                previous_state = current_state
-                time.sleep(0.1)
-                
-
-     
-    
+        current_state = GPIO.input(BUTTON)#read the button state
+        if current_state == GPIO.LOW and previous_state == GPIO.HIGH:#detects a falling edge    # Detect a falling edge:
+    # the button was not pressed before (HIGH)
+    # and is now pressed (LOW).
+    # So this is a new button press.
+    # Toggle the LED state and update the LED output.
+            led_state = not led_state#toggle the led state
+            GPIO.output(LED,led_state)#update the led
+        previous_state = current_state
+        time.sleep(0.01)
+except KeyboardInterrupt:
+    pass
 finally:
-    GPIO.cleanup()    
     
+
   
         
     
