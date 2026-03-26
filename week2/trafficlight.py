@@ -1,48 +1,53 @@
-import time
-from RPi import GPIO
+import time 
+import RPi.GPIO as GPIO
 
-# Define GPIO pins for the traffic lights
-GREEN = 9
-YELLOW = 10
-RED = 11
-
-# Use BCM pin numbering
 GPIO.setmode(GPIO.BCM)
 
-# Set all traffic light pins as output pins
-GPIO.setup(GREEN, GPIO.OUT)
-GPIO.setup(YELLOW, GPIO.OUT)
-GPIO.setup(RED, GPIO.OUT)
+LED1 = 9
+LED2 = 10
 
-# Function to set the traffic lights
-# True = LED on
-# False = LED off
-def set_lights(green, yellow, red):
-    GPIO.output(GREEN, green)
-    GPIO.output(YELLOW, yellow)
-    GPIO.output(RED, red)
+LED3 = 11
+
+BUTTON1 = 20
+
+
+GPIO.setup(LED1,GPIO.OUT)
+GPIO.setup(LED2,GPIO.OUT)
+GPIO.setup(LED3,GPIO.OUT)
+
+GPIO.setup(BUTTON1,GPIO.IN,pull_up_down=GPIO.PUD_UP)
+
+
+#start with all lights off
+GPIO.output(LED1,GPIO.LOW)
+GPIO.output(LED2,GPIO.LOW)
+GPIO.output(LED3,GPIO.LOW)
+
+#start with all lights off
 
 try:
     while True:
-        # Turn green light on, yellow and red off
-        set_lights(True, False, False)
-        print("GREEN")
-        time.sleep(5)
+        current_button1_state = GPIO.input(BUTTON1)
 
-        # Turn yellow light on, green and red off
-        set_lights(False, True, False)
-        print("YELLOW")
-        time.sleep(1)
-
-        # Turn red light on, green and yellow off
-        set_lights(False, False, True)
-        print("RED")
-        time.sleep(5)
-
-# Stop program safely if Ctrl+C is pressed
+        if current_button1_state == GPIO.LOW:
+           GPIO.output(LED1,GPIO.HIGH)
+           GPIO.output(LED2,GPIO.LOW)
+           GPIO.output(LED3,GPIO.LOW)
+           print("GReen trafic light")
+           time.sleep(5)
+           GPIO.output(LED1,GPIO.LOW)
+           GPIO.output(LED2,GPIO.HIGH)
+           GPIO.output(LED3,GPIO.LOW)
+           print("Yellow trafic light")
+           time.sleep(1)
+           GPIO.output(LED2,GPIO.LOW)
+           GPIO.output(LED3,GPIO.HIGH)  
+           GPIO.output(LED1,GPIO.LOW)
+           print("Red trafic light")
+           time.sleep(4)
+           
+            
 except KeyboardInterrupt:
     pass
-
-# Always reset GPIO pins at the end
 finally:
     GPIO.cleanup()
