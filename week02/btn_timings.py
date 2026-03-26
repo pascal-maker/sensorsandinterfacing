@@ -1,131 +1,88 @@
 import RPi.GPIO as GPIO
-from datetime import datetime
-import csv
 import os
-import signal
-import sys
+import time
+import csv
+from datetime import datetime
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
-# GPIO pin where the button is connected
-BUTTON_PIN = 20
+BUTTON = 20
+CSV_FILE = "data/btn_timings.csv" # this is the f  ile where the data will be stored
+PLOT_FILE = "data/button_press_durations.png"
 
-# Folder where data and plot will be stored
-DATA_DIR = "data"
-
-# CSV file where all button timings will be appended
-CSV_FILE = os.path.join(DATA_DIR, "btn_timings.csv")
-
-# Stores the moment when the button was pressed
-press_time = None
-
-# List to store all measured press durations
-# Each item will contain: (press timestamp, duration in seconds)
-timings = []
-
-# Use BCM GPIO numbering
 GPIO.setmode(GPIO.BCM)
+GPIO.setup(BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
-# Set button pin as input with internal pull-up resistor
-# Not pressed = 1
-# Pressed = 0
-GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+#make a data folder if t does not exists
+os.makedirs("data", exist_ok=True)
 
-# This function runs automatically every time the button changes state
-def on_edge(channel):
-    global press_time  # We want to update the global press_time variable
+#make a ybuqye fukneae
+file_exists = os.path.exists(CSV_FILE)
+press_start_time = None
+previous_state = GPIO.input(BUTTON)
+print("Button timing logger started.")
+print("Press the button to record a press.")
+print("Press Ctrl+C to exit.")
 
-    state = GPIO.input(channel)  # Read current button state
+try:
+    with open(CSV_FILE , 'a',newline="") as file:
+        writer = csv.writer(file)
+        if not file_exists:
+            writer.writerow(["timestamp", "DurationSeconds"])# this is the header of the csv file
+            
+        while True:
+            current_state = GPIO.input(BUTTON)
+            if previous_state == GPIO.HIGH and current_state == GPIO.LOW:#if the button is not pressed and now pressed
+                press_start_time = time.time()#record the time when the button is pressed
+                print("Button pressed")
+                time.sleep(0.02)
+            elif previous_state == GPIO.LOW and current_state == GPIO.HIGH:#if the button is pressed and now not pressed
+                if press_start_time is not None:
+                    press_end_time = time.time()#record the time when the button is not pressed
+                    duration = round(press_end_time - press_start_time, 3)#calculate the duration of the button press
+                    human_timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S.%f")#format the time to a human readable format
+                    writer.writerow([human_timestamp, duration])#write the time and duration to the csv file
+                    file.flush()
+                    print(f"{human_timestamp} - duration: {duration} seconds")#print the time and duration to the console
+                    press_start_time = None#reset the press start time
+                    time.sleep(0.02)
+            previous_state = current_state
+            time.sleep(0.005)
+                
 
-    if state == 0:  # Button is pressed
-        press_time = datetime.now()  # Save the exact press time
-        print(f"Pressed at {press_time.strftime('%H:%M:%S')}")
+                
+                
 
-    else:  # Button is released
-        if press_time is not None:  # Only calculate duration if a press was recorded
-            duration = (datetime.now() - press_time).total_seconds()  # Time held down
-            timings.append((press_time, duration))  # Store timestamp + duration
-            print(f"Released | duration: {duration:.3f}s")
-            press_time = None  # Reset press_time for next press
+except KeyboardInterrupt:
+    print("\nButton press logger stopped.")
+finally:
+    GPIO.cleanup()
+                
+ #plot all saved atata
+timestamps  = []    
+durations = []
 
-# Detect both button press and release
-# callback=on_edge means the function runs automatically on each edge
-# bouncetime=50 helps reduce contact bounce
-GPIO.add_event_detect(BUTTON_PIN, GPIO.BOTH, callback=on_edge, bouncetime=50)
-
-# This function reads the CSV file and makes a graph of button press durations
-def plot():
-    times = []       # List for timestamps
-    durations = []   # List for durations
-
-    # Open the CSV file and read all saved rows
-    with open(CSV_FILE, "r") as f:
-        reader = csv.DictReader(f)
+if os.path.exists(CSV_FILE) and os.path.getsize(CSV_FILE) > 0:#check if the file exists and has data
+    with open(CSV_FILE, 'r') as file:
+        reader = csv.reader(file)#create a csv reader object
+        next(reader) # Skip header
         for row in reader:
-            times.append(datetime.strptime(row["timestamp"], "%Y-%m-%d %H:%M:%S"))
-            durations.append(float(row["duration_seconds"]))
-
-    # Create the plot
-    fig, ax = plt.subplots(figsize=(8, 4))
-    ax.plot(times, durations, marker="o", linestyle="-", label="Duration (s)")
-
-    # Format the x-axis to show only time
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))
+            timestamps.append(datetime.strptime(row[0], "%Y-%m-%d %H:%M:%S.%f"))#convert the timestamp to a datetime object
+            durations.append(float(row[1]))#convert the duration to a float
+            
+if timestamps:
+    fig,ax  = plt.subplots(figsize=(12,6))
+    ax.plot_date(timestamps, durations, linestyle="-", marker="o", markersize=4, color="b", alpha=0.7)#plot the data
+    ax.xaxis.set_major_formatter(mdates.DateFormatter("%Y-%m-%d %H:%M"))#format the x-axis to display the date and time
     fig.autofmt_xdate()
-
-    # Add labels and title
-    ax.set_xlabel("Time")
+    ax.set_xlabel("Timestamp")
     ax.set_ylabel("Duration (seconds)")
     ax.set_title("Button Press Durations")
     ax.legend()
-
-    # Save plot to PNG file
     plt.tight_layout()
-    plt.savefig(os.path.join(DATA_DIR, "button_timing.png"))
+    plt.savefig("data/button_press_durations.png")
+    print("Plot saved to data/button_press_durations.png")
     plt.close()
-
-    print("Plot saved to data/button_timing.png")
-
-# This function runs when Ctrl+C is pressed
-def save_and_exit(sig=None, frame=None):
-    if timings:
-        # Create the data directory if it does not exist
-        os.makedirs(DATA_DIR, exist_ok=True)
-
-        # Check if CSV file already exists
-        file_exists = os.path.isfile(CSV_FILE)
-
-        # Open CSV in append mode so old data is kept
-        with open(CSV_FILE, "a", newline="") as f:
-            writer = csv.writer(f)
-
-            # Write header only if file does not exist yet
-            if not file_exists:
-                writer.writerow(["timestamp", "duration_seconds"])
-
-            # Write each timing entry
-            for ts, dur in timings:
-                writer.writerow([
-                    ts.strftime("%Y-%m-%d %H:%M:%S"),
-                    f"{dur:.3f}"
-                ])
-
-        print(f"\nAppended {len(timings)} entries to {CSV_FILE}")
-
-        # Create plot after saving CSV
-        plot()
-
-    # Reset GPIO pins before exiting
-    GPIO.cleanup()
-
-    # Stop the program
-    sys.exit(0)
-
-# When Ctrl+C is pressed, run save_and_exit()
-signal.signal(signal.SIGINT, save_and_exit)
-
-# Show startup message
-print(f"Tracking button hold duration on GPIO{BUTTON_PIN}. Press Ctrl+C to stop and save.")
-
-# Keep the program running and waiting for button events
-signal.pause()
+    print(f" Plot saved to {PLOT_FILE}")
+else:
+    print("No data to plot.")
