@@ -33,7 +33,7 @@ try:
         GPIO.output(LED2,GPIO.LOW)
         GPIO.output(LED3,GPIO.LOW)
         print("Green trafic light")
-        for i in range(50):#we use 50s seconds for 50 seconds we loop into ut 
+        for i in range(50):# 50 loops of 0.1 seconds = maximum 5 seconds of green
             current_button1_state = GPIO.input(BUTTON_pedestrian)#find the state of the button
             if current_button1_state == GPIO.LOW:#if the button is pressed
                 print("Pedestrian button pressed")#print the state of the button
