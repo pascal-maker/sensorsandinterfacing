@@ -1,61 +1,57 @@
-from RPi import GPIO
+import RPi.GPIO as GPIO
 import time
-
-btn_1 = 20
-btn_2 = 21
-btn_3 = 26
-btn_4 = 16
-buttons = [btn_1, btn_2, btn_3, btn_4]
-led = 17
-mode = "off"
+BUTTON_1 = 20
+BUTTON_2 = 21   
+BUTTON_3  = 16
+BUTTON_4 = 26
+LED = 17
 
 GPIO.setmode(GPIO.BCM)
-
-for btn in buttons:#setup the buttons
-    GPIO.setup(btn, GPIO.IN, pull_up_down=GPIO.PUD_UP)#setup the buttons
-
-GPIO.setup(led, GPIO.OUT)#setup the led
-
+GPIO.setup(BUTTON_1,GPIO.IN,pull_up_down=GPIO.PUD_UP)
+GPIO.setup(BUTTON_2,GPIO.IN,pull_up_down=GPIO.PUD_UP)
+GPIO.setup(BUTTON_3,GPIO.IN,pull_up_down=GPIO.PUD_UP)
+GPIO.setup(BUTTON_4,GPIO.IN,pull_up_down=GPIO.PUD_UP)
+GPIO.setup(LED,GPIO.OUT)
+mode = "off"
 try:
     while True:
-        # 1. Kijk of een knop is ingedrukt en pas mode aan
-        for btn in buttons:
-            state = GPIO.input(btn)
 
-            if state == 0:#if the button is pressed
-                if btn == btn_1:#if the first button is pressed
-                    mode = "off"
-                    print("LED OFF")
-                elif btn == btn_2:#if the second button is pressed
-                    mode = "on"
-                    print("LED ON")
-                elif btn == btn_3:#if the third button is pressed
-                    mode = "blink_slow"
-                    print("Blink slow")
-                elif btn == btn_4:#if the fourth button is pressed
-                    mode = "blink_fast"
-                    print("Blink fast")
+      if GPIO.input(BUTTON_1) == GPIO.LOW:#we do input here because the button is connected to the ground and we are using pull up resistors
+        time.sleep(0.05)
+        print("Led on")
+        mode = "on"
 
-        # 2. Voer de huidige mode uit
-        if mode == "off":#if the mode is off
-            GPIO.output(led, GPIO.LOW)
-            time.sleep(0.01)
+      elif GPIO.input(BUTTON_2) == GPIO.LOW:
+        time.sleep(0.05)
+        print(" Led off")    
+        mode = "off"
 
-        elif mode == "on":#if the mode is on
-            GPIO.output(led, GPIO.HIGH)
-            time.sleep(0.01)
+      elif GPIO.input(BUTTON_3) == GPIO.LOW:
+        time.sleep(0.2)
+        mode = "blink faster"
+        
+      elif GPIO.input(BUTTON_4) == GPIO.LOW:
+        time.sleep(0.2)
+        mode = "blink slower"
 
-        elif mode == "blink_slow":#if the mode is blink_slow
-            GPIO.output(led, GPIO.HIGH)
-            time.sleep(0.5)
-            GPIO.output(led, GPIO.LOW)
-            time.sleep(0.5)
+      if mode == "on":
+        GPIO.output(LED,GPIO.HIGH)
+      elif mode == "off":
+        GPIO.output(LED,GPIO.LOW)
+      elif mode == "blink faster":
+        GPIO.output(LED, not GPIO.input(LED))#we want to toogle so we take the opposute of the current state
+        time.sleep(0.1)
+      elif mode == "blink slower":
+        GPIO.output(LED, not GPIO.input(LED))#we want to toogle so we take the opposute of the current state
+        time.sleep(0.5)
+        
 
-        elif mode == "blink_fast":#if the mode is blink_fast
-            GPIO.output(led, GPIO.HIGH)
-            time.sleep(0.1)
-            GPIO.output(led, GPIO.LOW)
-            time.sleep(0.1)
-
+except KeyboardInterrupt:
+    pass
 finally:
     GPIO.cleanup()
+   
+
+
+
+
