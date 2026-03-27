@@ -70,3 +70,14 @@ finally:
 
     # Reset all GPIO pins
     GPIO.cleanup()
+
+#PWM means Pulse Width Modulation.
+
+#It is a way to control how much power a device gets by turning the signal:
+
+#ON
+#OFF
+#ON
+#OFF
+
+#very fast.    PWM is a fast ON/OFF signal used to control the average power going to something like a motor, LED, or buzzer
