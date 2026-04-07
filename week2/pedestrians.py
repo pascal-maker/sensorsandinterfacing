@@ -1,61 +1,61 @@
-import RPi.GPIO as GPIO
+from RPi import GPIO
 import time
 
-# Define the GPIO pins for the traffic lights and pedestrian button
-GREEN = 9       # Green traffic light LED
-YELLOW = 10     # Yellow traffic light LED
-RED = 11        # Red traffic light LED
-PED_BTN = 20    # Pedestrian button
+GPIO.setmode(GPIO.BCM)#set the mode of the GPIO pins to BCM
 
-# Use BCM pin numbering
-GPIO.setmode(GPIO.BCM)
+ped_button = 21#pedestrian button is connected to GPIO pin 21
+#leds
+led_green = 9
+led_yellow= 10
+led_red = 11
 
-# Set the traffic light pins as output pins
-GPIO.setup(GREEN, GPIO.OUT)
-GPIO.setup(YELLOW, GPIO.OUT)
-GPIO.setup(RED, GPIO.OUT)
+GPIO.setup(ped_button, GPIO.IN, pull_up_down=GPIO.PUD_UP)#set pedestrian button as input with pull up resistor
+GPIO.setup(led_green, GPIO.OUT)#set green led as output
+GPIO.setup(led_yellow, GPIO.OUT)#set yellow led as output
+GPIO.setup(led_red, GPIO.OUT)#set red led as output
 
-# Set the pedestrian button as an input with a pull-up resistor
-# Not pressed = 1
-# Pressed = 0
-GPIO.setup(PED_BTN, GPIO.IN, pull_up_down=GPIO.PUD_UP)
-
-# Function to control the three traffic light LEDs
-def set_lights(green, yellow, red):
-    GPIO.output(GREEN, green)
-    GPIO.output(YELLOW, yellow)
-    GPIO.output(RED, red)
-
+prev_ped_button = GPIO.input(ped_button)#previous state of pedestrian button
 try:
     while True:
-        pedestrian_requested = False   # Reset pedestrian request at the start of each cycle
+        GPIO.output(led_green, GPIO.HIGH)#turn on green led
+        GPIO.output(led_yellow, GPIO.LOW)#turn off yellow led
+        GPIO.output(led_red, GPIO.LOW)#turn off red led
+        
+        green_start = time.time()
+        while time.time() - green_start < 5:#green light for 5 seconds
+            current_ped_button = GPIO.input(ped_button)#current state of pedestrian button
+            #pedestrian button is pressed AND green light is on
+            if current_ped_button == GPIO.LOW and prev_ped_button == GPIO.HIGH:#if pedestrian button is pressed
+                print("Pedestrian button pressed")#print message
+                
+                #go to yellow
+                GPIO.output(led_green, GPIO.LOW)#turn off green led
+                GPIO.output(led_yellow, GPIO.HIGH)#turn on yellow led
+                time.sleep(1)#wait for 1 second
+                #go to red
+                GPIO.output(led_yellow, GPIO.LOW)#turn off yellow led
+                GPIO.output(led_red, GPIO.HIGH)#turn on red led
+                time.sleep(4)#wait for 4 seconds
 
-        # Turn the green light on
-        set_lights(True, False, False)
-        print("GREEN")
 
-        # Keep the green light on for up to 5 seconds
-        # During that time, keep checking if the pedestrian button is pressed
-        start_time = time.time()
-        while time.time() - start_time < 5:
-            if GPIO.input(PED_BTN) == 0:   # Button pressed
-                pedestrian_requested = True
-                print("Pedestrian button pressed")
-                break                      # Leave the green phase early
-            time.sleep(0.01)               # Small pause to reduce CPU usage
+                prev_ped_button = GPIO.input(ped_button)#update previous state of pedestrian button
+                time.sleep(0.1)#wait for 0.05 seconds
+               
+            else:
+                #normal cycle  if no pedestrian pressed
+                GPIO.output(led_green, GPIO.LOW)
+                GPIO.output(led_yellow, GPIO.HIGH)
+                GPIO.output(led_red, GPIO.LOW)
+                print("Cars: YELLOW")
+                time.sleep(1)
 
-        # Switch to yellow light
-        set_lights(False, True, False)
-        print("YELLOW")
-        time.sleep(1)                      # Keep yellow on for 1 second
-
-        # Switch to red light
-        set_lights(False, False, True)
-        print("RED")
-        time.sleep(5)                      # Keep red on for 5 seconds
-
+                GPIO.output(led_green, GPIO.LOW)
+                GPIO.output(led_yellow, GPIO.LOW)
+                GPIO.output(led_red, GPIO.HIGH)
+                print("Cars: RED")
+                time.sleep(4)
 except KeyboardInterrupt:
-    pass
+    print("Exiting program")
+    GPIO.cleanup()
 
-finally:
-    GPIO.cleanup()   # Reset GPIO pins when the program stops
+                
