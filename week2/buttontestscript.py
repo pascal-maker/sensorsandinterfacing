@@ -82,7 +82,7 @@ finally:
         plt.close()
         print(f"Plot saved to {plot_filename}")     #print the plot filename
     else:
-        print("No  button cganges detetecd,so no plot generated")#print the message
+        print("No  button changes detetecd,so no plot generated")#print the message
     GPIO.cleanup()
         
         
