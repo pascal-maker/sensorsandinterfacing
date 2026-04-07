@@ -1,3 +1,5 @@
+#import the libraries
+
 import os
 import csv
 import time
@@ -6,57 +8,58 @@ from RPi import GPIO
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 
+#
 GPIO.setmode(GPIO.BCM) #set the mode of the GPIO pins to BCM
 BUTTON = 20 #define the button pins
 POLL_DELAY = 0.01#delay between polls
 DATA_DIR = "data"#data directory
-CSV_FILE = os.path.join(DATA_DIR, "btn_timings.csv")
-GPIO.setup(BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+CSV_FILE = os.path.join(DATA_DIR, "btn_timings.csv")#create csv filename
+GPIO.setup(BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)#set the button pin as input with pull up resistor
 
-os.makedirs(DATA_DIR, exist_ok=True)
+os.makedirs(DATA_DIR, exist_ok=True)#create data directory if it doesn't exist
 
-#storage lists
+#storage lists && variables
 timestamps = []#list to store timestamps
 durations = []#list to store durations
-prev_state = GPIO.input(BUTTON)
-press_start_time = None
+prev_state = GPIO.input(BUTTON)#previous state of the button
+press_start_time = None#start time of the button press
 
-print("Program started. Press Ctrl+C to stop")
-print("Tracking duration")
+print("Program started. Press Ctrl+C to stop")#print message
+print("Tracking duration")#print message
 
 try:
     while True:
-        current_state = GPIO.input(BUTTON)
-        if current_state == GPIO.LOW and prev_state == GPIO.HIGH:
-            press_start_time = time.time()
-            print("Button pressed")
-        elif current_state == GPIO.HIGH and prev_state == GPIO.LOW:
-           if press_start_time is not None:
-            duration = time.time() - press_start_time
-            now = datetime.now()
-            timestamps.append(now)
-            durations.append(duration)
-            print(f"{now.strftime('%Y-%m-%d %H:%M:%S.%f')} GPIO {BUTTON} released")
-            press_start_time = None
+        current_state = GPIO.input(BUTTON)#current state of the button
+        if current_state == GPIO.LOW and prev_state == GPIO.HIGH:#if the button is pressed
+            press_start_time = time.time()#start time of the button press
+            print("Button pressed")#print message
+        elif current_state == GPIO.HIGH and prev_state == GPIO.LOW:#if the button is released
+           if press_start_time is not None:#if the button was pressed
+            duration = time.time() - press_start_time#calculate the duration of the button press
+            now = datetime.now()#get the current time
+            timestamps.append(now)#append the timestamp
+            durations.append(duration)#append the duration
+            print(f"{now.strftime('%Y-%m-%d %H:%M:%S.%f')} GPIO {BUTTON} released")#print the timestamp and duration
+            press_start_time = None#reset the start time
 
-        prev_state = current_state
-        time.sleep(POLL_DELAY)
+        prev_state = current_state#update the previous state
+        time.sleep(POLL_DELAY)#delay between polls
             
             
 
 except KeyboardInterrupt:#when the user press ctrl+c
     print("Exiting program")
 finally:
-    file_exists = os.path.exists(CSV_FILE)
-    mode = "a" if file_exists else "w"
+    file_exists = os.path.exists(CSV_FILE)#check if the file exists
+    mode = "a" if file_exists else "w"#set the mode to append or write
 
-    with open(CSV_FILE, mode, newline='') as csvfile:
-        writer = csv.writer(csvfile)
-        if not file_exists:
-            writer.writerow(["Timestamp", "Duration"])
-        for ts, duration in zip(timestamps, durations):
-            writer.writerow([ts.strftime('%Y-%m-%d %H:%M:%S.%f'), duration])
-    print(f"Data saved to {CSV_FILE}")
+    with open(CSV_FILE, mode, newline='') as csvfile:#open the csv file
+        writer = csv.writer(csvfile)#create a csv writer
+        if not file_exists:#if the file doesn't exist
+            writer.writerow(["Timestamp", "Duration"])#write the header
+        for ts, duration in zip(timestamps, durations):#loop through the timestamps and durations
+            writer.writerow([ts.strftime('%Y-%m-%d %H:%M:%S.%f'), duration])#write the timestamp and duration
+    print(f"Data saved to {CSV_FILE}")#print the filename
 
   
 
