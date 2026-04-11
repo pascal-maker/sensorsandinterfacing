@@ -1,21 +1,30 @@
 from time import sleep
-import smbus2
+from RPi import GPIO
 
-bus = smbus2.SMBus(1)
-ADC_ADDRESS = 0x48
+GPIO.setmode(GPIO.BCM)
+GPIO.setwarnings(False)
 
-def read_adc(channel):
-    bus.write_byte(ADC_ADDRESS, 0x40 + channel)
-    bus.read_byte(ADC_ADDRESS)         # dummy read
-    value = bus.read_byte(ADC_ADDRESS) # real read
-    return value
+pins = (19, 13, 6, 5)
+
+GPIO.setup(pins, GPIO.OUT)
+
+steps = (
+    (1, 0, 0, 0),  # Orange
+    (1, 1, 0, 0),  # Orange + Yellow
+    (0, 1, 0, 0),  # Yellow
+    (0, 1, 1, 0),  # Yellow + Pink
+    (0, 0, 1, 0),  # Pink
+    (0, 0, 1, 1),  # Pink + Blue
+    (0, 0, 0, 1),  # Blue
+    (1, 0, 0, 1),  # Blue + Orange
+)
 
 try:
     while True:
-        pot0 = read_adc(0)
-        joy_x = read_adc(6)
-        print(f"ADC0={pot0}   ADC6={joy_x}")
-        sleep(0.2)
+        for step in steps:
+            for i in range(4):
+                GPIO.output(pins[i], step[i])
+            sleep(0.02)
 
 except KeyboardInterrupt:
-    print("Stopped")
+    GPIO.cleanup()       
