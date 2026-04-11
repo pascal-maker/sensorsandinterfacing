@@ -10,7 +10,7 @@ try:
     while True:
         value = GPIO.input(btn)
         output = GPIO.output(led,not value)
-        print(" Button {0} is {1}".format(btn,value))
+        print(" The value of pin {0} is {1}".format(btn,value))
         time.sleep(0.5)
 except KeyboardInterrupt:
     pass 
