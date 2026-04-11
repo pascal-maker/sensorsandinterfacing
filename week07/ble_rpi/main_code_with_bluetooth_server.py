@@ -1,9 +1,7 @@
 import threading
 import queue
 
-# Bluez gatt uart service
-from bluetooth_uart_server.bluetooth_uart_server import ble_gatt_uart_loop
-
+from ble.bluetooth_uart_server import ble_gatt_uart_loop
 def main():
     i = 0
     rx_q = queue.Queue()

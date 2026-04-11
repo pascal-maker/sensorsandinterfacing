@@ -1,9 +1,11 @@
 import threading
-import dbus, dbus.mainloop.glib
+import dbus
+import dbus.service
+import dbus.mainloop.glib
 from gi.repository import GLib
-from utils_advertisement import Advertisement, register_ad_cb, register_ad_error_cb
-from utils_gatt_server import Service, Characteristic, register_app_cb, register_app_error_cb
 
+from ble.utils_advertisement import Advertisement, register_ad_cb, register_ad_error_cb
+from ble.utils_gatt_server import Service, Characteristic, register_app_cb, register_app_error_cb
 BLUEZ_SERVICE_NAME =           'org.bluez'
 DBUS_OM_IFACE =                'org.freedesktop.DBus.ObjectManager'
 LE_ADVERTISING_MANAGER_IFACE = 'org.bluez.LEAdvertisingManager1'
