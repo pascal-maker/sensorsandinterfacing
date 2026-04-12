@@ -5,7 +5,8 @@ import time
 fill_mode = False   # global variable: False = single LED, True = fill mode
 
 # ADC setup Read potentiometer (A2)
-ADC_ADDRESS = 0x48   # I2C address of the ADC
+ADC_ADDRESS = 0x48   # I2C address of the ADC #address of ADC chip
+#not something you invent → hardware defined
 A2 = 2               # potentiometer is connected to channel A2
 bus = smbus.SMBus(1) # use I2C bus 1
 
