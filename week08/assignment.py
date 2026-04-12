@@ -4,7 +4,7 @@ import time
 
 fill_mode = False   # global variable: False = single LED, True = fill mode
 
-# ADC setup
+# ADC setup Read potentiometer (A2)
 ADC_ADDRESS = 0x48   # I2C address of the ADC
 A2 = 2               # potentiometer is connected to channel A2
 bus = smbus.SMBus(1) # use I2C bus 1
@@ -13,7 +13,7 @@ def read_adc(channel):
     bus.write_byte(ADC_ADDRESS, 0x40 | channel)  # select ADC channel
     return bus.read_byte(ADC_ADDRESS)            # read value from ADC
 
-def scale_to_1_10(value):
+def scale_to_1_10(value):#Scale this value into 1-10 range, show on LED Bar Graph
     scaled = int((value / 255) * 10)  # convert ADC value to 0-10 range
     if scaled < 1:
         scaled = 1                    # keep minimum at 1
@@ -99,7 +99,7 @@ class LedBarGraph:
         self.shift_register.clear()        # clear all LEDs
 
 
-# Buzzer setup
+# Buzzer setupCreate a low pitch tone for lower values, and increase the pitch of the sound while the analog value increases
 GPIO.setmode(GPIO.BCM)       # use BCM numbering
 buzzer_pin = 12              # buzzer connected to GPIO 12
 GPIO.setup(buzzer_pin, GPIO.OUT)
@@ -107,7 +107,7 @@ buzzer_pwm = GPIO.PWM(buzzer_pin, 200)  # create PWM on buzzer pin with start fr
 buzzer_pwm.start(0)                     # start PWM with duty cycle 0 (silent)
 
 # Button setup
-BUTTON_PIN = 20
+BUTTON_PIN = 20#Use button GPIO 20 to toggle between “filling” the LED Bar graph, or just showing a single LED (event/interrupt)
 GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # button as input with pull-up
 GPIO.add_event_detect(BUTTON_PIN, GPIO.FALLING, callback=toggle_fill, bouncetime=200)
 
@@ -132,7 +132,7 @@ except KeyboardInterrupt:
     pass
 
 finally:
-    buzzer_pwm.ChangeDutyCycle(0)  # turn buzzer silent
+    buzzer_pwm.ChangeDutyCycle(0)  # turn buzzer silentMake sure the buzzer stops outputting sound when the program ends.
     buzzer_pwm.stop()              # stop PWM
     led_bar.clear()                # turn LEDs off
     GPIO.cleanup()                 # reset GPIO pins
