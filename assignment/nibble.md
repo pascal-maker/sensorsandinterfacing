@@ -432,6 +432,9 @@ then the LCD should show:
 0b1111       0xf
              15
 ```
+The 0b just means:
+
+this number is binary
 
 If the nibble is:
 
@@ -521,7 +524,7 @@ Screen 2 is about turning 4 button states into 1 nibble.
 5. Display the result in:
 
    * binary
-   * hex
+   * hex  The 0x just means:this number is hexadecimla
    * decimal
 
 ### Core formula:
