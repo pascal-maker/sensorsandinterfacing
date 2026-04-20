@@ -101,3 +101,4 @@ except KeyboardInterrupt:
     GPIO.cleanup()#cleanup the gpio pins
     
 
+"This exercise demonstrates the relationship between physical inputs (GPIO buttons) and data representation. By reading four buttons as individual bits, we construct a 4-bit nibble using bitwise left-shift operations. The resulting integer is then dynamically formatted into Binary (0b0000), Hexadecimal (0x0), and Decimal formats. This data is transmitted via the I2C protocol to a 16x2 LCD, providing real-time visual feedback of how binary state changes affect different numbering systems."
