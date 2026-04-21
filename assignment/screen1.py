@@ -84,3 +84,28 @@ except KeyboardInterrupt:
     lcd_clear()
     print("\nStopped")
     
+# ==============================================================================
+# NETWORK MONITORING SCRIPT EXPLANATION:
+# ------------------------------------------------------------------------------
+# 1. LINUX SYSTEM INTEGRATION: 
+#    The script uses 'subprocess' to run the 'ip a' command, which is the Linux 
+#    standard for listing network interfaces. This captures terminal output 
+#    into a Python string for processing.
+#
+# 2. INTELLIGENT PARSING LOGIC:
+#    The script acts as a filter for the raw terminal text:
+#    - ADAPTER IDENTIFICATION: It scans for headers like 'wlan0:' (WiFi) or 
+#      'eth0:' (Ethernet) to know which hardware it is looking at.
+#    - IP EXTRACTION: It searches for lines starting with 'inet' (IPv4) and 
+#      uses split operations to remove subnet masks (e.g., /24) and extract 
+#      only the raw IP address.
+#
+# 3. DYNAMIC LCD DISPLAY:
+#    Since a 16x2 LCD has limited space, the script implements a timed loop 
+#    to create a 'slideshow' effect. It clears the screen and alternates 
+#    between showing WiFi and LAN status every 2 seconds.
+#
+# 4. ERROR HANDLING:
+#    If the Pi is not connected to a network, the script defaults the string 
+#    to "Not Connected" to prevent the LCD from showing blank or confusing data.
+# ==============================================================================    
