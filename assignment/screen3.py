@@ -4,7 +4,7 @@ import time
 #LCD constants
 I2C_ADDR = 0x27#address of the lcd
 LCD_WIDTH = 16#width of the lcd 16 characters per line
-LD_CHR = 1#character mode send a normal character
+LCD_CHR = 1#character mode send a normal character
 LCD_CMD = 0#command mode send a lcd command
 
 LCD_LINE_1 = 0x80#first line of the lcd
@@ -13,9 +13,9 @@ LCD_LINE_2 = 0xC0#second line of the lcd
 ENABLE = 0b00000100#enable pin to toggle the enable pin the lcd so it reads data
 RS = 0b00000001#register select pin 0 command mode 1 character mode
 ADC_ADDR = 0x48#address of the adc
-X_CHANNEL = 5#channel of the adc So this function takes the channel number and converts it into the command format the ADC expects.I must translate channel 5 into the exact binary command the ADC understands.
+X_CHANNEL = 5#joystick x channel
 
-#That is what this function does.
+
 
 bus = smbus.SMBus(1)#initialize the i2c bus
 
@@ -48,7 +48,7 @@ def lcd_string(message, line):#make sure the message is 16 characters long
     message = message.ljust(LCD_WIDTH, " ")# make sure the message is 16 characters long
     lcd_send_byte(line, LCD_CMD)#send the line to the lcd
     for ch in message[:LCD_WIDTH]:#iterate through the message and send each character to the lcd
-        lcd_send_byte(ord(ch), LD_CHR)#send the character to the lcd
+        lcd_send_byte(ord(ch), LCD_CHR)#send the character to the lcd
 
 def lcd_clear():#clear the lcd
     lcd_send_byte(0x01, LCD_CMD)#clear the lcd
@@ -66,26 +66,21 @@ def read_adc(channel):#read the value from the adc
 def make_bar(value):#make a bar graph
     blocks = int((value/255)*16)  #calculate the number of blocks to display
     return "#" * blocks + "-" * (16-blocks)#return the bar
-
-
-lcd_init()
-try:
-    while True:
+def wait_or_stop(stop_event,seconds):
+    steps = int(seconds/0.1)
+    for _ in range(steps):
+        if stop_event.is_set():
+            return
+        time.sleep(0.1)
+def run(stop_event):
+    lcd_init()
+    while not stop_event.is_set():
         x_val = read_adc(X_CHANNEL)#read the current X-axis joystick value and store it in x_val depening on mapping lefy -> mayble low value center around milddle right maybe high value
-        line1= make_bar(x_val)#make a bar graph the raw avlue joystick value and tuern tonto a afke elcd abr graph
+        line1 = make_bar(x_val)#make a bar graph the raw avlue joystick value and tuern tonto a afke elcd abr graph
         line2 = f"VRX=> {x_val}"#format the value to be displayed on the lcd make a textstrign showing rhe actuald ecminal value
         lcd_string(line1, LCD_LINE_1)#display the formatted value on the lcd
         lcd_string(line2, LCD_LINE_2)#display the formatted value on the lcd
         time.sleep(0.1)#wait a tiny bit
-except KeyboardInterrupt:
     lcd_clear()
-    print("Exiting...")
-
-#the goal of this exercise is t read teh joystick in raw value and display it on the lcd using a fake bar graph and then display it a second time showing its real value.
-#the bar graph is fake because it is not a real bar graph it is just a string of characters that are displayed on the lcd
-#we start with inital lcd settgs and import the settins for joystick we then sue commands to write and read bits to the joystick channel def ads7830_command(channel) and the command def read_adc(channel)
-#eventually we make a bar graph using the def make_bar(value) function witht the formula int((value/255)*16) and then display it on the lcd
-#we start with the joystick in the center position and then we move it to the left and then to the right and then back to the center
-# then we do a while loop[try: while True:] where we read x_channel of the joystick and we use themake bar fuction to make the bar and to eventually read the value
 
     

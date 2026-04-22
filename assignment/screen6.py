@@ -58,7 +58,14 @@ rx_q = queue.Queue()                   #queue to store incoming data from ble
 tx_q = queue.Queue()  #queue to store outgoing data to ble
 device_name = "pj-pi-gatt-uart"  #name of the ble device                                               
    
-def main():                                                                   
+def wait_or_stop(stop_event,seconds):
+    steps = int(seconds/0.1)
+    for _ in range(steps):
+        if stop_event.is_set():
+            return
+        time.sleep(0.1)
+
+def run(stop_event):
     lcd_init()                            #initialize the lcd              
     lcd_clear()                           #clear the lcd                            
     lcd_string("Send a message", LCD_LINE_1)  #display the message on the lcd      
@@ -70,7 +77,7 @@ def main():
         daemon=True                    #set as daemon thread so it exits when the main thread exits
     ).start()
 
-    while True:
+    while not stop_event.is_set():
         try:
             # Check for incoming BLE data
             incoming = rx_q.get(timeout=0.1)  #get the incoming data from the queue
@@ -85,12 +92,7 @@ def main():
                 lcd_clear()  #clear the lcd                 
                 lcd_string(line1, LCD_LINE_1)  #display the first line on the lcd                                 
                 lcd_string(line2, LCD_LINE_2)  #display the second line on the lcd
-        except queue.Empty:  #if there is no incoming data                                                   
-            continue  #continue to the next iteration                                    
-        except KeyboardInterrupt:  #if the user presses ctrl+c
-            lcd_clear()  #clear the lcd
-            print("\nExiting...")                                               
-            break
-
-if __name__ == "__main__":                              
-    main()
+        except queue.Empty: 
+            pass #if there is no incoming data                                                   
+        wait_or_stop(stop_event,0.1)
+    lcd_clear()

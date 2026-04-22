@@ -4,7 +4,7 @@ import subprocess#used to run the linux command
 
 I2C_ADDR = 0x27#address of the lcd
 LCD_WIDTH = 16#width of the lcd 16 characters per line
-LD_CHR = 1#character mode send a normal character
+LCD_CHR = 1#character mode send a normal character
 LCD_CMD = 0#command mode send a lcd command
 
 LCD_LINE_1 = 0x80#first line of the lcd
@@ -44,7 +44,7 @@ def lcd_string(message, line):
     message = message.ljust(LCD_WIDTH, " ")# make sure the message is 16 characters long
     lcd_send_byte(line, LCD_CMD)#send the line to the lcd
     for ch in message[:LCD_WIDTH]:#iterate through the message and send each character to the lcd
-        lcd_send_byte(ord(ch), LD_CHR)#send the character to the lcd
+        lcd_send_byte(ord(ch), LCD_CHR)#send the character to the lcd
 def lcd_clear():#clear the lcd
     lcd_send_byte(0x01, LCD_CMD)#clear the lcd
     time.sleep(0.0005)    
@@ -68,44 +68,29 @@ def get_ip_addresses():
             elif current_adapter == "eth0":#check if the current adapter is eth0 save as LAN ip
                 eth_ip = ip_address
     return wlan_ip, eth_ip# return both values together
-lcd_init()
-try:
-    while True:#keep running forver until stopped
-         wlan_ip, eth_ip = get_ip_addresses()#get the ip addresses both
-         lcd_clear()
-         lcd_string("WiFi: ", LCD_LINE_1)#display WiFi on first line 
-         lcd_string(wlan_ip, LCD_LINE_2)#display WiFi ip on second line
-         time.sleep(2)
-         lcd_clear()
-         lcd_string("LAN: ", LCD_LINE_1)#display LAN on first line
-         lcd_string(eth_ip, LCD_LINE_2)#display LAN ip on second line
-         time.sleep(2)
-except KeyboardInterrupt:
+
+def wait_or_stop(stop_event,seconds):#wait for the given seconds or until the stop event is set
+    steps = int(seconds/0.1)#calculate the number of steps
+    for _ in range(steps):#loop for the number of steps
+        if stop_event.is_set():#check if the stop event is set
+            return
+        time.sleep(0.1)#wait a tiny bit
+
+def run(stop_event):
+    lcd_init()
+    while not stop_event.is_set():
+        wlan_ip, eth_ip = get_ip_addresses()#get the ip addresses both
+        lcd_clear()
+        lcd_string("WiFi: ", LCD_LINE_1)#display WiFi on first line 
+        lcd_string(wlan_ip, LCD_LINE_2)#display WiFi ip on second line
+        wait_or_stop(stop_event,2)
+
+        if stop_event.is_set():
+            break
+        #wait for 2 seconds or until the stop event is set
+        lcd_clear()
+        lcd_string("LAN: ", LCD_LINE_1)#display LAN on first line
+        lcd_string(eth_ip, LCD_LINE_2)#display LAN ip on second line
+        wait_or_stop(stop_event,2)#wait for 2 seconds or until the stop event is set
     lcd_clear()
-    print("\nStopped")
     
-# ==============================================================================
-# NETWORK MONITORING SCRIPT EXPLANATION:
-# ------------------------------------------------------------------------------
-# 1. LINUX SYSTEM INTEGRATION: 
-#    The script uses 'subprocess' to run the 'ip a' command, which is the Linux 
-#    standard for listing network interfaces. This captures terminal output 
-#    into a Python string for processing.
-#
-# 2. INTELLIGENT PARSING LOGIC:
-#    The script acts as a filter for the raw terminal text:
-#    - ADAPTER IDENTIFICATION: It scans for headers like 'wlan0:' (WiFi) or 
-#      'eth0:' (Ethernet) to know which hardware it is looking at.
-#    - IP EXTRACTION: It searches for lines starting with 'inet' (IPv4) and 
-#      uses split operations to remove subnet masks (e.g., /24) and extract 
-#      only the raw IP address.
-#
-# 3. DYNAMIC LCD DISPLAY:
-#    Since a 16x2 LCD has limited space, the script implements a timed loop 
-#    to create a 'slideshow' effect. It clears the screen and alternates 
-#    between showing WiFi and LAN status every 2 seconds.
-#
-# 4. ERROR HANDLING:
-#    If the Pi is not connected to a network, the script defaults the string 
-#    to "Not Connected" to prevent the LCD from showing blank or confusing data.
-# ==============================================================================    

@@ -132,12 +132,19 @@ def make_lines(x, y, z, c):
     return line1, line2
 
 
-def main():
+def wait_or_stop(stop_event,seconds):
+    steps = int(seconds/0.1)
+    for _ in range(steps):
+        if stop_event.is_set():
+            return
+        time.sleep(0.1)
+
+def run(stop_event):
     try:
         lcd_init()
         mpu_init()
 
-        while True:
+        while not stop_event.is_set():
             x, y, z = read_accel_g()  # read the accelerometer data
             combined_g = calculate_combined_g(x, y, z)  # calculate the combined g value
 
