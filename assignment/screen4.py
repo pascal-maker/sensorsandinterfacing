@@ -77,7 +77,7 @@ def wait_or_stop(stop_event,seconds):
 def run(stop_event):
     lcd_init()
     while not stop_event.is_set():
-        y_val = read_adc(Y_CHANNEL)#read the current X-axis joystick value and store it in x_val depening on mapping lefy -> mayble low value center around milddle right maybe high value
+        y_val = read_adc(Y_CHANNEL)#read the current Y-axis joystick value and store it in x_val depening on mapping lefy -> mayble low value center around milddle right maybe high value
         line1= make_bar(y_val)#make a bar graph the raw avlue joystick value and tuern tonto a afke elcd abr graph
         line2 = f"VRY=> {y_val}"#format the value to be displayed on the lcd make a textstrign showing rhe actuald ecminal value
         lcd_string(line1, LCD_LINE_1)#display the formatted value on the lcd
