@@ -93,7 +93,7 @@ def get_ip_addresses():
             current_adapter = "wlan0"
         elif "eth0:" in line:#check if the line contains eth0
             current_adapter = "eth0"
-        elif line.startswith("inet"):#check if the line starts with inet finds ipv4 line
+        elif line.startswith(" inet "):#check if the line starts with inet finds ipv4 line
             ip_address = line.split()[1].split("/")[0]#extract only the ip
             if current_adapter == "wlan0":#save as WiFi ip
                 wlan_ip = ip_address
