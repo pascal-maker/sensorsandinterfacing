@@ -66,21 +66,35 @@ def read_adc(channel):#read the value from the adc
 def make_bar(value):#make a bar graph
     blocks = int((value/255)*16)  #calculate the number of blocks to display
     return "#" * blocks + "-" * (16-blocks)#return the bar
-def wait_or_stop(stop_event,seconds):
-    steps = int(seconds/0.1)
-    for _ in range(steps):
-        if stop_event.is_set():
+def wait_or_stop(stop_event,seconds):#waits for a specific amount of time or until the stop event is set
+    steps = int(seconds/0.1)#calculate the number of steps to wait
+    for _ in range(steps):#loop through the steps
+        if stop_event.is_set():#check if the stop event is set
             return
-        time.sleep(0.1)
+        time.sleep(0.1)#wait a tiny bit
 def run(stop_event):
-    lcd_init()
-    while not stop_event.is_set():
-        x_val = read_adc(X_CHANNEL)#read the current X-axis joystick value and store it in x_val depening on mapping lefy -> mayble low value center around milddle right maybe high value
+    lcd_init()#initialize the lcd
+    while not stop_event.is_set():#keeps running until the stop event is set
+        x_val = read_adc(X_CHANNEL)#read the current X-axis joystick value and store it in x_val
+
         line1 = make_bar(x_val)#make a bar graph the raw avlue joystick value and tuern tonto a afke elcd abr graph
         line2 = f"VRX=> {x_val}"#format the value to be displayed on the lcd make a textstrign showing rhe actuald ecminal value
+
         lcd_string(line1, LCD_LINE_1)#display the formatted value on the lcd
         lcd_string(line2, LCD_LINE_2)#display the formatted value on the lcd
-        time.sleep(0.1)#wait a tiny bit
-    lcd_clear()
 
-    
+        wait_or_stop(stop_event,0.1)#wait a tiny bit
+
+    lcd_clear()#clear the lcd
+
+
+if __name__ == "__main__":
+    import threading
+
+    stop_event = threading.Event()
+
+    try:
+        run(stop_event)
+    except KeyboardInterrupt:
+        stop_event.set()
+        lcd_clear()

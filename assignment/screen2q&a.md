@@ -97,4 +97,111 @@ A: Custom character memory → lets you define your own symbols.
 **Q: Why does the LCD use 4-bit mode?**
 A: To save GPIO pins. Older microcontrollers had limited pins, so 4-bit mode halves the required data lines.
 
+Focus only on these 4 parts.
+
+### 1. Button setup
+
+```python
+GPIO.setup(BUTTON_1, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+```
+
+Each button is an input with an internal pull-up resistor.
+
+So:
+
+```text
+not pressed = HIGH = 0
+pressed     = LOW  = 1
+```
+
+That is why your code reverses the logic here:
+
+```python
+b1 = 1 if GPIO.input(BUTTON_1) == GPIO.LOW else 0
+```
+
+### 2. Make 4 bits into a nibble
+
+```python
+value = (b1 << 3) | (b2 << 2) | (b3 << 1) | b4
+```
+
+This makes one 4-bit number.
+
+Example:
+
+```text
+b1 b2 b3 b4 = 1 0 1 1
+
+b1 << 3 = 1000
+b2 << 2 = 0000
+b3 << 1 = 0010
+b4      = 0001
+
+result  = 1011 = 11 decimal
+```
+
+So `b1` is the most significant bit, and `b4` is the least significant bit.
+
+### 3. Format for LCD
+
+```python
+binary_text = f"0b{value:04b}"
+hex_text = f"0x{value:01x}"
+```
+
+This creates:
+
+```text
+value = 15
+binary_text = 0b1111
+hex_text = 0xf
+```
+
+Then:
+
+```python
+line1 = binary_text + hex_text.rjust(16-len(binary_text))
+line2 = str(value).rjust(16)
+```
+
+This aligns binary left, hex right, and decimal right.
+
+### 4. Update only when value changes
+
+```python
+if value != last_value:
+```
+
+The LCD only updates when a new button combination is pressed. This avoids constantly clearing and rewriting the same screen.
+
+Oral explanation:
+
+> “This script reads four buttons as four bits. Because I use pull-up resistors, a pressed button reads LOW, so I convert LOW to 1 and HIGH to 0. Then I combine the four bits into one nibble using bit shifts. `b1` becomes the most significant bit and `b4` the least significant bit. After that I format the value as binary, hexadecimal, and decimal, and display it on the LCD. The screen only updates when the value changes.”
+
+## 5 oral questions + answers
+
+### 1. Why does a pressed button become `1` even though GPIO reads `LOW`?
+
+Because the buttons use internal pull-up resistors. When the button is not pressed, the input is HIGH. When pressed, it connects to ground, so it becomes LOW. In the program, I convert LOW to `1` because logically that means “button pressed”.
+
+### 2. What is a nibble?
+
+A nibble is 4 bits. In this assignment, the four buttons together form one nibble, with values from `0000` to `1111`, so decimal `0` to `15`.
+
+### 3. Explain this line:
+
+```python
+value = (b1 << 3) | (b2 << 2) | (b3 << 1) | b4
+```
+
+It places each button bit in the correct position. `b1` is shifted to bit position 3, `b2` to position 2, `b3` to position 1, and `b4` stays at position 0. The OR operator combines them into one 4-bit value.
+
+### 4. What does `value:04b` mean?
+
+It formats the number as binary with 4 digits. For example, decimal `3` becomes `0011`, so the LCD shows `0b0011`.
+
+### 5. Why do you use `last_value`?
+
+To update the LCD only when the button combination changes. Without `last_value`, the LCD would keep clearing and rewriting even when nothing changed.
 
