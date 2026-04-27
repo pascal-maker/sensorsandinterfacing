@@ -1,58 +1,51 @@
 import time
-import RPi.GPIO as GPIO
+import RPi.GPIO as GPIO#import RPi.GPIO as GPIO so we can use its functions to control the shift register
 
+DS = 22#data pin is used to send data to the shift register
+STCP = 27#latch pin is used to latch the data to the shift register
+SHCP = 17#clock pin is used to clock the data to the shift register
 
-DS = 22
-STCP = 27
-SHCP = 17
+class ShiftRegister:#shift register class
+    MSB_TO_LSB = "MSB_TO_LSB"#most significant bit to least significant bit
+    LSB_TO_MSB = "LSB_TO_MSB"#least significant bit to most significant bit
 
+    def __init__(self):#constructor
+        self.ds = DS#data pin
+        self.stcp = STCP#latch pin
+        self.shcp = SHCP#clock pin
 
-class ShiftRegister:
-    MSB_TO_LSB = "MSB_TO_LSB"
-    LSB_TO_MSB = "LSB_TO_MSB"
+        for pin in (self.ds, self.stcp, self.shcp):#we set the pins to output and initial value to low
+            GPIO.setup(pin, GPIO.OUT, initial=GPIO.LOW)
 
-    def __init__(self):
-        GPIO.setmode(GPIO.BCM)
-        GPIO.setwarnings(False)
+    def pulse(self, pin):#this function pulses the pin
+        GPIO.output(pin, GPIO.HIGH)#we set the pin to high
+        time.sleep(0.000001)#we wait for 1 microsecond
+        GPIO.output(pin, GPIO.LOW)#we set the pin to low
+        time.sleep(0.000001)#we wait for 1 microsecond
 
-        GPIO.setup(DS, GPIO.OUT)
-        GPIO.setup(STCP, GPIO.OUT)
-        GPIO.setup(SHCP, GPIO.OUT)
+    def shift_byte_out(self, byte, direction=MSB_TO_LSB):#this function shifts out a byte
+        byte &= 0xFF#we mask the byte to 8 bits
 
-        GPIO.output(DS, GPIO.LOW)
-        GPIO.output(STCP, GPIO.LOW)
-        GPIO.output(SHCP, GPIO.LOW)
-
-    def pulse(self, pin):
-        GPIO.output(pin, GPIO.HIGH)
-        time.sleep(0.000001)
-        GPIO.output(pin, GPIO.LOW)
-        time.sleep(0.000001)
-
-    def shift_byte_out(self, byte, direction=MSB_TO_LSB):
-        byte &= 0xFF
-
-        if direction == self.MSB_TO_LSB:
-            bit_range = range(7, -1, -1)
+        if direction == self.MSB_TO_LSB:#if the direction is most significant bit to least significant bit
+            bit_range = range(7, -1, -1)#we set the bit range to 7 to -1 in steps of -1
         else:
-            bit_range = range(8)
+            bit_range = range(8)#we set the bit range to 0 to 8 in steps of 1
 
-        for i in bit_range:
-            bit = (byte >> i) & 1
-            GPIO.output(DS, GPIO.HIGH if bit else GPIO.LOW)
-            self.pulse(SHCP)
+        for i in bit_range:#we loop through each bit in the bit range
+            GPIO.output(self.ds, (byte >> i) & 1)#we set the data pin to the value of the current bit
+            self.pulse(self.shcp)#we pulse the clock pin
 
-    def shift_out_16bit(self, value, direction=MSB_TO_LSB):
-        value &= 0xFFFF
+    def shift_out_16bit(self, value, direction=LSB_TO_MSB):#this function shifts out a 16-bit value
+        value &= 0xFFFF#we mask the value to 16 bits
 
-        msb = (value >> 8) & 0xFF
-        lsb = value & 0xFF
+        msb = (value >> 8) & 0xFF#we get the most significant bit
+        lsb = value & 0xFF#we get the least significant bit
 
-        if direction == self.LSB_TO_MSB:
-            self.shift_byte_out(lsb, direction)
-            self.shift_byte_out(msb, direction)
+        if direction == self.LSB_TO_MSB:#if the direction is least significant bit to most significant bit
+            self.shift_byte_out(lsb, direction)#we shift out the least significant bit
+            self.shift_byte_out(msb, direction)#we shift out the most significant bit
         else:
-            self.shift_byte_out(msb, direction)
-            self.shift_byte_out(lsb, direction)
+            self.shift_byte_out(msb, direction)#we shift out the most significant bit
+            self.shift_byte_out(lsb, direction)#we shift out the least significant bit
 
-        self.pulse(STCP)
+        self.pulse(self.stcp)#we pulse the latch pin
