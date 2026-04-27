@@ -1,0 +1,70 @@
+# W9 Assignment Explanation
+
+The assignment is essentially building a **mini Etch-a-Sketch on an 8x8 LED matrix**:
+
+1. A **blinking LED** acts as your cursor (one pixel that turns on/off rapidly so you know where you are)
+2. The **4 directional buttons** move that cursor around the 8x8 grid (up/down/left/right)
+3. The **joystick click** acts as "pen down" — it leaves a permanent dot at the current cursor position
+4. When you move the cursor away, the drawn dot **stays lit**, so you can build up a drawing
+5. **Extra credit:** clicking again on an existing dot **erases** it (toggle behavior)
+
+# Code Review
+
+Your code structure is solid and matches the assignment well. There's **one bug** that will crash the program though:
+
+In `main.py`, inside `setup_buttons()`:
+
+```python
+GPIO.setup(button, [GPIO.IN](http://GPIO.IN), pull_up_down=GPIO.PUD_UP)
+```
+
+That `[GPIO.IN](http://GPIO.IN)` is a markdown link that got pasted in by accident. It needs to be just:
+
+```python
+GPIO.setup(button, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+```
+
+Other than that, the logic is correct:
+
+- **Cursor blink** — toggles `cursor_visible` every 0.3 s, and `refresh_once` ORs the cursor pixel into the row data only when visible. Good.
+- **Movement debounce** — 0.2 s `last_move_time` prevents the cursor from sprinting across the matrix on a single press. Good.
+- **Click debounce** — 0.3 s prevents one click being read as multiple toggles. Good.
+- **Toggle pixel** — `self.row_data[y] ^= (1 << x)` correctly XORs the bit, so the same click both draws and erases (your extra credit ✓).
+- **Multiplexing** — `refresh_once` walks all 8 rows, lighting one row at a time with the right column pattern. `col_byte = ~col_byte & 0xFF` correctly inverts for common-anode columns. The 1 ms per row is typical.
+- **Bit order** — sending row byte in the upper 8 bits and column byte in the lower 8 bits, LSB→MSB, matches the typical 74HC595 daisy-chain wiring for these matrix kits.
+
+A couple of small notes (not bugs):
+
+- `time.sleep(0.000001)` in `pulse()` is below what `time.sleep` can actually deliver on a Pi — the OS overhead alone is much higher. It still works because the 74HC595 latches on any rising edge, but you don't really need the sleeps at all.
+- The cursor "blink" only updates on `cursor_visible` flips, but because `refresh_once` runs in a tight loop, the matrix is being constantly redrawn anyway, which is what you want for multiplexing.
+
+# What the LED Matrix Should Look Like
+
+When you run it (after fixing the bug), here's the visual:
+
+**At startup** — only one LED in the top-left corner (0,0) is blinking on and off about 3 times per second. The rest of the matrix is dark.
+
+```
+[•] [ ] [ ] [ ] [ ] [ ] [ ] [ ]      (• blinking)
+[ ] [ ] [ ] [ ] [ ] [ ] [ ] [ ]
+[ ] [ ] [ ] [ ] [ ] [ ] [ ] [ ]
+... (all dark)
+```
+
+**Press RIGHT a few times** — the blinking dot moves right one column per press.
+
+**Press joystick click** — that LED becomes solid (always on, no longer blinking).
+
+**Move RIGHT again** — the previous spot stays lit solid, and a new blinking cursor appears one column over.
+
+```
+[O] [O] [O] [•] [ ] [ ] [ ] [ ]      (O = solid, • = blinking)
+```
+
+**Hover the cursor back over a drawn dot** — that pixel will appear to "blink" because the cursor's blink overlays the solid dot (technically: when `cursor_visible` is False, the cursor cell briefly turns off even though it's "drawn"). This is normal for this implementation.
+
+**Click again on a drawn dot** — it goes back to dark, and the cursor continues blinking on that empty cell.
+
+You should be able to draw arbitrary shapes — letters, smiley faces, etc. — by walking the cursor around and clicking.
+
+If you see flicker or only some rows lighting up, that's almost always a timing/wiring issue with the multiplexing, not the logic. Try lowering the per-row sleep to 0.0005 if flicker is bad.
