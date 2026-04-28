@@ -52,12 +52,7 @@ projectone/
 ├── docker-compose.yml             # Compose config — mounts GPIO devices and socket
 ├── .dockerignore
 │
-└── datavisualization/             # Older monolithic version (kept for reference)
-    ├── main.py                    # Single-file version of the full dashboard
-    ├── buttonservice.py
-    ├── buzzerservice.py
-    ├── lcdservice.py
-    └── gpio_compat.py
+└── (see /datavisualization/ at repo root for the older monolithic version)
 ```
 
 ---
