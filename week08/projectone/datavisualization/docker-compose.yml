@@ -1,0 +1,27 @@
+name: freenove-gradio-gpio
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      pull: true
+    image: freenove-gradio:hardware
+    environment:
+      GRADIO_SERVER_NAME: "0.0.0.0"
+      GRADIO_SERVER_PORT: "7860"
+      RPI_LGPIO_CHIP: "0"
+      # Required because /proc/device-tree is not available inside Docker.
+      RPI_LGPIO_REVISION: "00c04171"
+    ports:
+      - "7860:7860"
+    # rpi-lgpio needs ioctl access to gpiochip device nodes.
+    user: "0:0"
+    # rpi-lgpio writes .lgd-nfy* in the current working directory.
+    # /app should stay read-only from the image layer, so run from /tmp.
+    working_dir: /tmp
+    command: ["python", "/app/interface/main.py"]
+    devices:
+      - "/dev/gpiochip0:/dev/gpiochip0"
+      - "/dev/i2c-1:/dev/i2c-1"
+    restart: always

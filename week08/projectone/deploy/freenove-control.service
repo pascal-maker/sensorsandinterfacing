@@ -1,0 +1,14 @@
+[Unit]
+Description=Freenove Host Control Socket
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /home/pi/sensorsandinterfacing/week08/projectone/daemon/freenove_control_daemon.py
+Restart=always
+RestartSec=1
+RuntimeDirectory=freenove-control
+RuntimeDirectoryMode=0775
+
+[Install]
+WantedBy=multi-user.target
