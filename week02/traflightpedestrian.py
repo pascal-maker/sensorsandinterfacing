@@ -1,64 +1,50 @@
-import time 
-import RPi.GPIO as GPIO
-
-GPIO.setmode(GPIO.BCM)
-
-LED1 = 9
-LED2 = 10
-
-LED3 = 11
-BUTTON_pedestrian = 21 #pedestrian button
+import time
+from RPi import GPIO
+GREEN = 9
+YELLOW = 10
+RED = 11
 
 
+BUTTON = 20 # Pedestrian Button 
+
+GPIO.setmode(GPIO.BCM) #Using BCM mode
+
+GPIO.setup(GREEN,GPIO.OUT)#
+GPIO.setup(YELLOW,GPIO.OUT)
+GPIO.setup(RED,GPIO.OUT)
+GPIO.setup(BUTTON,GPIO.IN,pull_up_down=GPIO.PUD_UP)
 
 
-GPIO.setup(LED1,GPIO.OUT)
-GPIO.setup(LED2,GPIO.OUT)
-GPIO.setup(LED3,GPIO.OUT)
 
-GPIO.setup(BUTTON_pedestrian,GPIO.IN,pull_up_down=GPIO.PUD_UP)
+def all_off():# set all three leds to low off at once - a reset/clear function
+    GPIO.output(GREEN,GPIO.LOW)
+    GPIO.output(YELLOW,GPIO.LOW)
+    GPIO.output(RED,GPIO.LOW)
 
-
-#start with all lights off
-GPIO.output(LED1,GPIO.LOW)
-GPIO.output(LED2,GPIO.LOW)
-GPIO.output(LED3,GPIO.LOW)
-
-#start with all lights off
+def light_on_led(led):# turns on the traffic light
+    all_off()#turn off green yellow and red before lighting anything
+    GPIO.output(led,GPIO.HIGH)   #turns on whichever led pin was passed into the function
 
 try:
     while True:
+        #green for max 5 seconds but check button every 0.1s
+        light_on_led(GREEN)  #turn on green light all three leds are turned off by the all_off function we have passed green light into the function
+        print("Green light is on")# set it here because it will always print when the green light turns on, if it was in the if loop it would only print when the button was pressed so the light could change sooner for the pedestrian
+        for i in range(50): #0.1 * 50 = 5 seconds loop 50 times = 5 seconds max
+            if GPIO.input(BUTTON) == GPIO.LOW:#if button is pressed 
+                print("Pedestrian Button Pressed")#print that button is pressed
+                break
+            time.sleep(0.1)# exit early dont wait the full 5s wait 0.1 between each check so 50 check per 5 seconds it polss the button every 0.1 seconds if the button is pressed it breaks out of the delay loop so the light can change sooner for the pedestrian
 
-        GPIO.output(LED1,GPIO.HIGH)
-        GPIO.output(LED2,GPIO.LOW)
-        GPIO.output(LED3,GPIO.LOW)
-        print("Green trafic light")
-        for i in range(50):# 50 loops of 0.1 seconds = maximum 5 seconds of green
-            current_button1_state = GPIO.input(BUTTON_pedestrian)#find the state of the button
-            if current_button1_state == GPIO.LOW:#if the button is pressed
-                print("Pedestrian button pressed")#print the state of the button
-                break#exit the loop
-            time.sleep(0.1)#wait for 1 second
-
-        
-            
-        GPIO.output(LED1,GPIO.LOW)#turn off the green light
-        GPIO.output(LED2,GPIO.HIGH) #turn on the yellow light
-        GPIO.output(LED3,GPIO.LOW) #turn off the red light
-        print("Yellow trafic light")
+        light_on_led(YELLOW)#turn on yellow light
+        print("Yellow light is on")
         time.sleep(1)#wait for 1 second
-        GPIO.output(LED2,GPIO.LOW)#turn off the yellow light
-        GPIO.output(LED3,GPIO.HIGH)  #turn on the red light
-        GPIO.output(LED1,GPIO.LOW)#turn off the green light
-        print("Red trafic light")
+
+        light_on_led(RED)#turn on red light
+        print("Red light is on")
         time.sleep(4)#wait for 4 seconds
 
-
-
-       
-           
-            
 except KeyboardInterrupt:
-    pass
+    print("Program Stoppped")
 finally:
-    GPIO.cleanup()
+    GPIO.cleanup()    
