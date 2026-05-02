@@ -1,80 +1,96 @@
-from RPi import GPIO#importing GPIO module 
-import smbus#importing smbus module for i2c communication
-import time #importing time module for delays
+import RPi.GPIO as GPIO #import GPIO library
+import smbus #import smbus library
+import time #import time library
 
-#RGB pins
-RED = 17#red led pin
-GREEN = 27#green led pin
-BLUE = 22#blue led pin
-
-#BUTTON
+# --- Hardware config ---
+R_PIN      = 5 #red led pin
+G_PIN      = 6#green led pin
+B_PIN      = 13#blue led pin
 BUTTON_PIN = 20#button pin
-#I2C address
-bus = smbus.SMBus(1)#set the i2c bus
-address = 0x48#set the address the 7-bit i2c address of the target device default adress of common adc chips like ADS1115 or each device on the i2d bus has a unique address 
-#state
-system_on = True#system state wheteher the system is currently running likely to allow shutdown 
- 
 
-GPIO.setwarnings(False)
+ADC_ADDR = 0x48   # ADS7830 I2C address of the ADS7830 chip on the bus 
+CMD_R    = 0x94   # AIN2 (red pot) bit 7 = 1 means single-ended.   this is the command to read the red pot from the ADC
+CMD_G    = 0xD4   # AIN3 (green pot) bit 7 = 1 means single-ended.   this is the command to read the green pot from the ADC
+CMD_B    = 0xA4   # AIN4 (blue pot) bit 7 = 1 means single-ended.   this is the command to read the blue pot from the ADC
+VREF     = 5.0# reference voltage (5V). Used to convert the raw ADC value (0–255) back into a real voltage: voltage = value * 5.0 / 255
+#Bits 6-4 = which channel (AIN0-AIN7) 3-2 = power mode (keep ADC on between reads)       
+# CMD_r,CMD_G CMD_B are not adresses of the pots themselves,they are instructions to send to the ADC chip saying please read the voltage on the pin where that pot is connected.                                                
+# --- GPIO setup ---
+GPIO.setwarnings(False)#set warnings to false
 GPIO.cleanup()
-GPIO.setmode(GPIO.BCM)#set the mode
+GPIO.setmode(GPIO.BCM)#set mode to BCM
 
-for pin in [RED,GREEN,BLUE]:#
-    GPIO.setup(pin, GPIO.OUT)#set the pins as output
+GPIO.setup(R_PIN,      GPIO.OUT)#set red led pin to output
+GPIO.setup(G_PIN,      GPIO.OUT)#set green led pin to output
+GPIO.setup(B_PIN,      GPIO.OUT)#set blue led pin to output
+GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)#set button pin to input with pull-up resistor
 
-#button input (pull_up)
-GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)#set the button pin as input with pull up resistor
-#PWM setup a digital pin can only be fully on or off pwm fakes analog brightness by rapidly toggling the pin the longer it stays on per cycle the brighter the LED appears
-pwm_r = GPIO.PWM(RED, 100)#set the pwm for red led
-pwm_g = GPIO.PWM(GREEN, 100)#set the pwm for green led
-pwm_b = GPIO.PWM(BLUE, 100)#set the pwm for blue led
-pwm_r.start(0)#start the pwm for red led
-pwm_g.start(0)#start the pwm for green led
-pwm_b.start(0)#start the pwm for blue led
+# --- PWM (1000 Hz, start fully off for common anode) ---
+pwm_r = GPIO.PWM(R_PIN, 1000)#set red led pwm 
+# Pulse width modulation — a way to fake analog brightness using a digital pin. A digital pin can only be fully ON (3.3V) or fully OFF (0V). PWM rapidly switches the pin on and off many times per second. The ratio of on-time to off-time controls how bright the LED appears:
+#
+# 100% duty cycle: |‾‾‾‾‾‾‾‾‾‾| fully on
+#  50% duty cycle: |‾‾‾‾‾_____| half on, half off
+#   0% duty cycle: |__________| fully off
+pwm_g = GPIO.PWM(G_PIN, 1000)#set green led pwm
+pwm_b = GPIO.PWM(B_PIN, 1000)#set blue led pwm
+pwm_r.start(100)#start red led pwm
+pwm_g.start(100)#start green led pwm
+pwm_b.start(100)#start blue led pwm
 
-#ADC reading functions
-def read_adc(channel):#function to read the adc channel takes one argument channel which is the channel number of the ADC to read usually 0-3
-    command = 0x84 | ((channel & 0x07) << 4)#set the command for the adc (0x84) | ((channel & 0x07) << 4) constructs a command byte: 0x84 sets the single-ended input mode and start bit for the PCF8591 ADC; (channel & 0x07) masks the channel to 3 bits (valid channels 0-3); << 4 shifts the channel bits into the correct position in the command byte; | combines them into one byte to send
-    bus.write_byte(address, command)#write the command to the bus  sends the command byte to the ADC over the I2C bus telling it which channel to read
-    value = bus.read_byte(address)#read the value from the bus reads the 8-bit result back (0-255), representing the analog voltage on that channel
-    return value#return the value
+# --- I2C / ADC ---
+bus = smbus.SMBus(1)#set i2c bus
 
-def toggle_system(channel):#function to toggle the system takes one argument channel which is the channel number of the button that triggered the interrupt usually the pin number of the button
-    global system_on#set the system state not a local copy
-    system_on = not system_on#toggle the system state flips the state - if it was true it becomes false and vice versa
-    print("System:","ON"if system_on else "OFF")#print the system state if true print "ON" else print "OFF"
+def read_adc(command):
+    bus.write_byte(ADC_ADDR, command)#write command to i2c bus send the command to the ADC chip on the I2C bus to start a conversion
+    bus.read_byte(ADC_ADDR)          # discard stale conversion The first read after a write returns the result of the *previous* conversion, not the one you just triggered.
+    value   = bus.read_byte(ADC_ADDR)#read adc value This is the 8-bit measurement from the ADC, ranging from 0 to 255. When you turn the potentiometer:  • fully counter-clockwise: ~0 (0V)  • half way: ~128 (2.5V)  • fully clockwise: ~255 (5V)
+    voltage = value * VREF / 255#convert adc value to voltage Converts the raw 0–255 number back into real volts (0.00V to 5.00V):
 
-GPIO.add_event_detect(BUTTON_PIN, GPIO.FALLING, callback=toggle_system, bouncetime=200)#set the event detect for the button detects a falling edge (transition from high to low) on the button pin calls the toggle_system function when detected with a debounce time of 200 milliseconds
+   # 0V   = 0 * 5.0 / 255 = 0.00V  (pot at minimum)
+   # 2.5V = 128 * 5.0 / 255 = 2.51V (pot halfway)
+   # 5V   = 255 * 5.0 / 255 = 5.00V (pot at maximum)
+    return value, voltage#return adc value and voltage
 
+# Common anode: invert duty cycle so higher pot = brighter
+def to_duty(adc_value):#convert adc value to duty cycle
+    return 100 - (adc_value * 100 / 255)#invert duty cycle so higher pot = brighter convert the raw adc value (0–255) into a percentage (0–100)  • pot at minimum → 0 * 100 / 255 = 0%  • pot at half → 128 * 100 / 255 = 50%  • pot at maximum → 255 * 100 / 255 = 100% nverts it because your LED is common anode (lower duty cycle = brighter):┌──────────────┬───────────┬───────────────────┬────────────────┬─────────────────┐ │ Pot position │ ADC value │ Without inversion │ With inversion │   LED result    │ ├──────────────┼───────────┼───────────────────┼────────────────┼─────────────────┤ │ Minimum      │ 0         │ 0%                │ 100%           │ Off             │ ├──────────────┼───────────┼───────────────────┼────────────────┼─────────────────┤ │ Half         │ 128       │ 50%               │ 50%            │ Half bright     │ ├──────────────┼───────────┼───────────────────┼────────────────┼─────────────────┤ │ Maximum      │ 255       │ 100%              │ 0%             │ Full brightness │ └──────────────┴───────────┴───────────────────┴────────────────┴─────────────────┘   
+
+# --- System state ---
+system_on = True#set system state
+
+def toggle_system(channel):#toggle system
+    global system_on#global variable    
+    system_on = not system_on#toggle system state
+    print("System:", "ON" if system_on else "OFF")#print system state
+
+GPIO.add_event_detect(BUTTON_PIN, GPIO.FALLING, callback=toggle_system, bouncetime=200)#detect button press   make button work without polling instead of checkign hr button very sae evry loop, you register it once and the i calls toogle system automatically when it detects a button press.
+
+# --- Main loop ---
 try:
     while True:
-        if system_on:#active mode
-            #read potentiometers
-            r_val = read_adc(2)#read the red channel read the potentiometers from adc channels 2,3,4 each returns a value 0-255 representing the wiper position of the pot 0v 0 3.3v 255
-            g_val = read_adc(3)#read the green channel read the potentiometers from adc channels 2,3,4 each returns a value 0-255 representing the wiper position of the pot 0v 0 3.3v 255
-            b_val = read_adc(4)#read the blue channel read the potentiometers from adc channels 2,3,4 each returns a value 0-255 representing the wiper position of the pot 0v 0 3.3v 255
+        if system_on:#if system is on
+            r, vr = read_adc(CMD_R)#read adc value for red led   This returns two things:  • r — the raw 8-bit value (0–255)  • vr — the voltage (0.00V – 5.00V)
+            g, vg = read_adc(CMD_G)#read adc value for green led  This returns two things:  • g — the raw 8-bit value (0–255)  • vg — the voltage (0.00V – 5.00V)
+            b, vb = read_adc(CMD_B)#read adc value for blue led   This returns two things:  • b — the raw 8-bit value (0–255)  • vb — the voltage (0.00V – 5.00V)
 
-            #convert to pwm duty cycle 0-100
-            r_pwm = (r_val/255)*100#convert to pwm converts the 0-255 adc range to a 0-100 pwm duty cycle percentage adc reads 0 pwm 0 fully off adc reads 128 pwm ~50 half brightness adc reads 255 pwm 100 fully bright
-            g_pwm = (g_val/255)*100#convert to pwm converts the 0-255 adc range to a 0-100 pwm duty cycle percentage adc reads 0 pwm 0 fully off adc reads 128 pwm ~50 half brightness adc reads 255 pwm 100 fully bright
-            b_pwm = (b_val/255)*100#convert to pwm converts the 0-255 adc range to a 0-100 pwm duty cycle percentage adc reads 0 pwm 0 fully off adc reads 128 pwm ~50 half brightness adc reads 255 pwm 100 fully bright
-        else:#standby mode
-            r_pwm = 5#set the pwm for red led forces all three channels to 5% duty cycle a very dim white glow this acts as a visual indicator that the system is off but still powered rather than going completely dark
-            g_pwm = 5#set the pwm for green led forces all three channels to 5% duty cycle a very dim white glow this acts as a visual indicator that the system is off but still powered rather than going completely dark
-            b_pwm = 5#set the pwm for blue led forces all three channels to 5% duty cycle a very dim white glow this acts as a visual indicator that the system is off but still powered rather than going completely dark
+            pwm_r.ChangeDutyCycle(to_duty(r))#update the red led duty cycle  Converts the raw 0–255 number back into real volts (0.00V to 5.00V): 0V   = 0 * 5.0 / 255 = 0.00V  (pot at minimum) 2.5V = 128 * 5.0 / 255 = 2.51V (pot halfway) 5V   = 255 * 5.0 / 255 = 5.00V (pot at maximum)   
+            pwm_g.ChangeDutyCycle(to_duty(g))#update the green led duty cycle  Converts the raw 0–255 number back into real volts (0.00V to 5.00V): 0V   = 0 * 5.0 / 255 = 0.00V  (pot at minimum) 2.5V = 128 * 5.0 / 255 = 2.51V (pot halfway) 5V   = 255 * 5.0 / 255 = 5.00V (pot at maximum)   
+            pwm_b.ChangeDutyCycle(to_duty(b))#update the blue led duty cycle  Converts the raw 0–255 number back into real volts (0.00V to 5.00V): 0V   = 0 * 5.0 / 255 = 0.00V  (pot at minimum) 2.5V = 128 * 5.0 / 255 = 2.51V (pot halfway) 5V   = 255 * 5.0 / 255 = 5.00V (pot at maximum)   
 
-        #apply
-        pwm_r.ChangeDutyCycle(r_pwm)#apply the pwm for red led sets the red led brightness to r_pwm percent updates the live pwm signal  on each pin with the enwly calcualed duty cycle. actualy chanegs the eld brightness without this step 
-        pwm_g.ChangeDutyCycle(g_pwm)#apply the pwm for green led sets the green led brightness to g_pwm percent hold values between 0-100 percent  ( 0-255)
-        pwm_b.ChangeDutyCycle(b_pwm)#apply the pwm for blue led sets the blue led brightness to b_pwm percent    hold values between 0-100 percent (0-255) 
-        #the led pyschically changes color/brightness  the moment is caled
-        time.sleep(0.5)#wait for 0.5 seconds 
-     
+            print(f"R: {r:3d} ({vr:.2f}V)  G: {g:3d} ({vg:.2f}V)  B: {b:3d} ({vb:.2f}V)")#print adc values and voltages
+        else:
+            # Never fully off — dim white glow at 95% (common anode)
+            pwm_r.ChangeDutyCycle(95)#change red led duty cycle all three channels are set to 95% duty cycle
+            pwm_g.ChangeDutyCycle(95)#change green led duty cycle very dim white glow
+            pwm_b.ChangeDutyCycle(95)#change blue led duty cycle all three channels are set to 95% duty cycle
+
+        time.sleep(0.1)#wait for 0.1 seconds
+
 except KeyboardInterrupt:
-    print("Cleaning up and exiting")#print that the system is cleaning up and exiting
-    pwm_r.stop()#stop the pwm for red led stops the pwm signal on each led pin this halts the rapid on/off switching of the red led  which effectively turns it off 
-    pwm_g.stop()#stop the pwm for green led stops the pwm signal on each led pin this halts the rapid on/off switching of the green led  which effectively turns it off
-    pwm_b.stop()#stop the pwm for blue led stops the pwm signal on each led pin this halts the rapid on/off switching of the blue led  which effectively turns it off
-    GPIO.cleanup()#cleanup the GPIO pins releases control of all GPIO pins used in the script back to the operating system to prevent issues with future scripts or unexpected behavior
-
+    print("Exiting...")#print exiting message
+    pwm_r.stop()#stop red led pwm
+    pwm_g.stop()#stop green led pwm
+    pwm_b.stop()#stop blue led pwm
+    bus.close()#close i2c bus
+    GPIO.cleanup()#cleanup gpio pins
