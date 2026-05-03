@@ -30,18 +30,18 @@ GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP) #Initializes the butto
 servo = GPIO.PWM(SERVO_PIN, 50)#Initializing the servo 
 servo.start(0)#Starts the servo
 
-CMD_A4 = 0x44
+CMD_A4 = 0x44#Defining the command for the ADC 
 
-def read_adc():
-    bus.write_byte(ADC_ADDR, CMD_A4)
-    bus.read_byte(ADC_ADDR)
-    return bus.read_byte(ADC_ADDR)
+def read_adc():#Reads the ADC value 
+    bus.write_byte(ADC_ADDR, CMD_A4)#Writs the command to the ADC
+    bus.read_byte(ADC_ADDR)#Reads the ADC value
+    return bus.read_byte(ADC_ADDR)#Returns the ADC value
 
-def toggle_system():
-    global system_on
-    with lock:
-        system_on = not system_on
-    print("System ON" if system_on else "System OFF")
+def toggle_system():#Toggles the system on and off
+    global system_on#Sets the system_on variable to true
+    with lock:#Creates a lock to prevent race conditions
+        system_on = not system_on#Sets the system_on variable to true
+    print("System ON" if system_on else "System OFF")#Prints that the system is on or off
 
 GPIO.add_event_detect(BUTTON_PIN, GPIO.FALLING, callback=toggle_system,bouncetime=200)     #Adds an event detect to the button pin 
 
@@ -56,10 +56,10 @@ try:#The try block is used to catch any errors that may occur
             duty = 2.5 + (angle /180 )*10 #Calculates the duty cycle based on the angle
             servo.ChangeDutyCycle(duty)#Changes the duty cycle of the servo
 
-            line1 = f"ADC:{adc_val:3d}".ljust(LCD_WIDTH)
-            line2 = f"Angle:{angle:3d}".ljust(LCD_WIDTH)
-            lcd.lcd_display_string(line1, 1)
-            lcd.lcd_display_string(line2, 2)
+            line1 = f"ADC:{adc_val:3d}".ljust(LCD_WIDTH)#Formats the ADC value to 3 digits and left justifies it
+            line2 = f"Angle:{angle:3d}".ljust(LCD_WIDTH)#Formats the angle to 3 digits and left justifies it
+            lcd.lcd_display_string(line1, 1)#Displays the line1 on the LCD
+            lcd.lcd_display_string(line2, 2)#Displays the line2 on the LCD
 
             print(f"ADC: {adc_val} Angle: {angle} ")#Prints the ADC value and angle
         else:
