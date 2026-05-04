@@ -28,7 +28,84 @@ class MPU6050:#define a class for mpu6050
             #opposite direction (e.g. tilting left vs right). Without this, -1 would come out as 65535, so you subtract
             #65536 to get the correct negative number back.
         return val   
-    #private read function for registers
+    # ============================================================
+    # HOW _read_accel() AND _read_gyro() WORK — BEGINNER GUIDE
+    # ============================================================
+    #
+    # BIG PICTURE:
+    #   raw bytes → combine → fix sign → divide by scale → real value
+    #
+    # ------------------------------------------------------------
+    # STEP 1: READ 6 BYTES FROM SENSOR
+    # ------------------------------------------------------------
+    #   data = bus.read_i2c_block_data(address, 0x3B, 6)
+    #
+    #   Why 6 bytes?
+    #     X = 2 bytes (high + low)
+    #     Y = 2 bytes
+    #     Z = 2 bytes
+    #     Total: 3 axes x 2 bytes = 6 bytes
+    #
+    #   Example of what sensor sends:
+    #     data = [0x01, 0xF4, 0xFF, 0x9C, 0x40, 0x00]
+    #              X_hi  X_lo  Y_hi  Y_lo  Z_hi  Z_lo
+    #
+    # ------------------------------------------------------------
+    # STEP 2: COMBINE HIGH + LOW BYTES INTO ONE NUMBER
+    # ------------------------------------------------------------
+    #   x = combine(data[0], data[1])
+    #   y = combine(data[2], data[3])
+    #   z = combine(data[4], data[5])
+    #
+    #   Inside combine():
+    #     val = (high << 8) | low
+    #
+    #   Example:
+    #     high = 0x01 = 00000001
+    #     low  = 0xF4 = 11110100
+    #
+    #     shift:  00000001 → 00000001 00000000
+    #     OR:     00000001 00000000
+    #           | 00000000 11110100
+    #           = 00000001 11110100 = 500
+    #
+    #   So X raw = 500
+    #
+    # ------------------------------------------------------------
+    # STEP 3: FIX NEGATIVE NUMBERS (2's complement)
+    # ------------------------------------------------------------
+    #   if val > 32767:
+    #       val -= 65536
+    #
+    #   The sensor range is -32768 to +32767.
+    #   Values above 32767 are actually negative:
+    #     65535 - 65536 = -1   (65535 means -1)
+    #
+    # ------------------------------------------------------------
+    # STEP 4: DIVIDE BY SCALE TO GET REAL UNITS
+    # ------------------------------------------------------------
+    #   ACCELEROMETER (±2g range):
+    #     scale = 16384
+    #     raw 16384 / 16384 = 1.0g  (gravity)
+    #     bytes → combine → signed → ÷16384 → g
+    #
+    #   GYROSCOPE (±250dps range):
+    #     scale = 131
+    #     raw 131 / 131 = 1.0 degree per second
+    #     bytes → combine → signed → ÷131 → °/s
+    #
+    # ------------------------------------------------------------
+    # STEP 5: RETURN x, y, z IN REAL UNITS
+    # ------------------------------------------------------------
+    #   Sensor flat on table:
+    #     Z ≈ 1g  (gravity pulling down)
+    #     X ≈ 0
+    #     Y ≈ 0
+    #
+    # ONE-LINE SUMMARY:
+    #   Read 6 bytes, combine high+low pairs into 16-bit signed
+    #   values, divide by scale factor to get real-world units.
+    # ============================================================
     def _read_accel(self):#read acceleration data
         data = self.bus.read_i2c_block_data(self.address, 0x3B, 6)#read 6 bytes starting from 0x3B reading 6 bytes at once grabs all accelerometer data in one shot reducing delay and error the MPU6050 stor3s each axis value as a 16-bit signed integer split across 2 bytes (high byte + low byte). there are 3 axes, so 3 axes x 2 bytes = 6 bytes total
         x = self.combine(data[0], data[1])#convert raw acceleration to g how much force the sensor feels relative to gravity in each direction  dividing by 16834 convers the raw number into a scale of -1 to 1 
