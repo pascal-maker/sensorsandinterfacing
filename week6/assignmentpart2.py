@@ -100,7 +100,7 @@ class MPU6050:
         self._apply_ranges()#  send range
     @property
     def range(self):
-        return self._accel_range#return accel range
+        return self._accel_range, self._gyro_range#return accel range
     @range.setter
     def range(self, values):#set range
         accel,gyro = values#set accel and gyro range
@@ -139,7 +139,13 @@ class MPU6050:
         x = self.combine(data[0], data[1])/self._gyro_scale#convert raw gyroscope to degrees per second how fast the sensor is rotating
         y = self.combine(data[2], data[3])/self._gyro_scale#convert raw gyroscope to degrees per second
         z = self.combine(data[4], data[5])/self._gyro_scale  #convert raw gyroscope to degrees per second
-        return x,y,z
+        return x,y,z#return x, y, z gyroscope values
+
+    def get_temperature(self):
+        data = self.bus.read_i2c_block_data(self.address, 0x41, 2)#read 2 bytes starting from 0x41 reading 2 bytes at once grabs all temperature data in one shot reducing delay and error
+        raw_temp = self.combine(data[0], data[1])#raw temperature data
+        temp = raw_temp/340.0 + 36.53#convert raw temperature to celsius
+        return temp    
     def get_acceleration(self):#get acceleration data
         return self._read_accel()
     def get_gyroscope(self):#get gyroscope data
@@ -151,7 +157,8 @@ mpu.range = (0, 0)#set range to +-2g and +-250dps
 while True:
     ax, ay, az = mpu.get_acceleration()#get acceleration data
     gx, gy, gz = mpu.get_gyroscope()#get gyroscope data
-    print(f"Acceleration: {ax:.2f}x-direction, {ay:.2f}y-direction, {az:.2f}z-direction")#print acceleration data
-    print(f"Gyroscope: {gx:.2f}x-rotation, {gy:.2f}y-rotation, {gz:.2f}z-rotation")#print gyroscope data
-    time.sleep(0.1)#wait for 0.1 seconds
+    print(f"Temperature: {mpu.get_temperature():.2f} degrees Celsius")
+    print(f"Acceleration: {ax:.2f} x-direction, {ay:.2f} y-direction, {az:.2f} z-direction")#print acceleration data
+    print(f"Gyroscope: {gx:.2f} x-rotation, {gy:.2f} y-rotation, {gz:.2f} z-rotation")#print gyroscope data
+    time.sleep(1)#wait for 1 seconds
 
