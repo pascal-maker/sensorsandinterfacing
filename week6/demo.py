@@ -1,53 +1,46 @@
 import smbus
 import time
+import math
 
 bus = smbus.SMBus(1)#enable i2c
-MPU_ADDRESS = 0x68
-bus.write_byte_data(MPU_ADDRESS, 0x6B, 0)#wake up
+addr = 0x68#mpu6050 address
 
-bus.write_byte_data(MPU_ADDRESS, 0x1C, 0)#accel range
-bus.write_byte_data(MPU_ADDRESS, 0x1B, 0)#gyro range
+bus.write_byte_data(addr, 0x6B, 0)#wake up
 
-def read_block():
-    return bus.read_i2c_block_data(MPU_ADDRESS, 0x3B, 14)#read 14 bytes starting from 0x3B
-def combine(high,low):#convert two bytes to one signed value
-    value = (high<<8) | low#shift high byte 8 bits to the left and bitwise OR with low byte
-    if value > 32768:#if value is greater than 32768, it is a negative number
-        value -= 65536#subtract 2^16 to get the negative value
-    return value
+def combine(h, l):#convert two bytes to one signed value combining the high and low bytes to get the full 16 bit value
+    val = (h << 8) | l#shift high byte left by 8 and bitwise OR with low byte
+    if val > 32767:#if value is greater than 32767, it is a negative number sensors uses neftaive values for opposite directions
+        val -= 65536#subtract 2^16 to get the negative value
+    return val
 
-try:
-    while True:
-        data = read_block()#read 14 bytes starting from 0x3B
-        print(data)#
-        ax = combine(data[0],data[1])#convert first two bytes to one signed value
-        ay = combine(data[2],data[3])#convert next two bytes to one signed value
-        az = combine(data[4],data[5])#convert next two bytes to one signed value
+pitch = 0#pitch angle means tilting forwards and backwards
+roll = 0#roll angle means tilting side to side
+prev_time = time.time()#previous time 
 
-    #temperature
-    temp_raw = combine(data[6],data[7])#convert next two bytes to one signed value
-    temp_c = (temp_raw / 340.0) + 36.53#convert raw temperature to degrees Celsius
+while True:#loop forever
+    data = bus.read_i2c_block_data(addr, 0x3B, 14)#read 14 bytes starting from 0x3B reading 14 bytes at once grabs all sensorr data in one shot reducing delay and error    
 
-    #gyroscope
-    gx = combine(data[8],data[9])#convert next two bytes to one signed value
-    gy = combine(data[10],data[11])#convert next two bytes to one signed value
-    gz = combine(data[12],data[13])#convert next two bytes to one signed value
+    acc_x = combine(data[0], data[1]) / 16384#convert raw acceleration to g how much force the sensor feels relative to gravity in each direction  dividing by 16834 convers the raw number into a scale of -1 to 1 
+    acc_y = combine(data[2], data[3]) / 16384#convert raw acceleration to g how much force the sensor feels relative to gravity in each direction 
+    acc_z = combine(data[4], data[5]) / 16384#convert raw acceleration to g how much force the sensor feels relative to gravity in each direction 
 
-    accel_x_g = ax / 16384.0#convert raw acceleration to g
-    accel_y_g = ay / 16384.0#convert raw acceleration to g
-    accel_z_g = az / 16384.0#convert raw acceleration to g
+    gyro_x = combine(data[8], data[9]) / 131#convert raw gyroscope to degrees per second how fast the sensor is rotating
+    gyro_y = combine(data[10], data[11]) / 131#convert raw gyroscope to degrees per second how fast the sensor is rotating dividing by 131 converts the raw number into a scale of -250 to 250 degrees per second 
 
-    gyro_x_dps = gx / 131.0#convert raw gyroscope to degrees per second
-    gyro_y_dps = gy / 131.0#convert raw gyroscope to degrees per second
-    gyro_z_dps = gz / 131.0#convert raw gyroscope to degrees per second
+    # time difference
+    curr_time = time.time()#get current time
+    dt = curr_time - prev_time#calculate time difference
+    prev_time = curr_time#update previous time
 
-    print("Accelerometer (g): ({:.3f}, {:.3f}, {:.3f})".format(accel_x_g, accel_y_g, accel_z_g))#print acceleration
-    print("Gyroscope (°/s): ({:.3f}, {:.3f}, {:.3f})".format(gyro_x_dps, gyro_y_dps, gyro_z_dps))#print gyroscope
-    print("Temperature: {:.2f} °C".format(temp_c))#print temperature
+    # accelerometer angles
+    pitch_acc = math.atan2(acc_x, math.sqrt(acc_y**2 + acc_z**2)) * 180 / math.pi#calculate pitch angle using accelerometer using an angle from two numbers and convert it to degrees  and asko combines the other two axes into one value  divdided by 180 convertng radian to degrees
+    roll_acc  = math.atan2(acc_y, math.sqrt(acc_x**2 + acc_z**2)) * 180 / math.pi#calculate roll angle using accelerometer and convertng radian to degrees
 
-    time.sleep(0.5)#wait 0.5 seconds
+    # complementary filter
+    alpha = 0.98#98% gyro, 2% accelerometer
+    pitch = alpha * (pitch + gyro_x * dt) + (1 - alpha) * pitch_acc#98% gyro update + 2% accel correction
+    roll  = alpha * (roll  + gyro_y * dt) + (1 - alpha) * roll_acc#98% gyro update + 2% accel correction
 
-except KeyboardInterrupt:
-    print("Stopped by user")
-finally:
-    bus.close()
+    print(f"Pitch: {pitch:.2f}°, Roll: {roll:.2f}°")#print pitch and roll
+
+    time.sleep(0.05)
