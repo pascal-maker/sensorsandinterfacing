@@ -23,7 +23,7 @@ servo_pwm.start(0)#starting the servo pin
 servo_on = False#setting the servo to off
 last_button_state = 1#setting the last button state to 1
 
-def read_adc(channel):
+def read_adc(channel):#reading the adc value
     """
     Read one analog channel from the ADC.
 
@@ -65,11 +65,8 @@ try:
         else:
             servo_pwm.ChangeDutyCycle(0)#setting the servo duty cycle to 0%
             print(" SERVO OFF")
-        time.sleep(0.1)
+        time.sleep(0.1)#waiting for 0.1 seconds
 except KeyboardInterrupt:
     servo_pwm.stop()
     GPIO.cleanup()
-    print("Servo stopped by user")
-
-        
-    
+    print("Servo stopped by user")  

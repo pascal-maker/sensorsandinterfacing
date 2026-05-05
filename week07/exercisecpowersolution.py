@@ -55,7 +55,7 @@ try:
         last_button_state = current_button_state#setting the last button state to current button state
         
         adc_value = read_adc(POT_CHANNEL)#reading the adc value
-        speed = adc_value / 2.55 * 100.0#calculating the speed
+        speed = (adc_value / 255.0) * 100.0#calculating the speed
         
         if mode == OFF:#checking the mode
             pwm1.ChangeDutyCycle(0)#setting the motor pin 1 to 0% duty cycle
@@ -74,5 +74,3 @@ except KeyboardInterrupt:
     pwm2.stop()
     bus.close()
     GPIO.cleanup()
-    
-
