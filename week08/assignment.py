@@ -1,139 +1,189 @@
 import RPi.GPIO as GPIO
-import smbus
+import smbus2
 import time
 
-fill_mode = False   # global variable: False = single LED, True = fill mode
+# -----------------------------
+# GPIO CONSTANTS
+# -----------------------------
 
-# ADC setup Read potentiometer (A2)
-ADC_ADDRESS = 0x48   # I2C address of the ADC #address of ADC chip
-#not something you invent → hardware defined
-A2 = 2               # potentiometer is connected to channel A2
-bus = smbus.SMBus(1) # use I2C bus 1
+BUTTON = 20
+BUZZER = 12
 
-def read_adc(channel):
-    bus.write_byte(ADC_ADDRESS, 0x40 | channel)  # select ADC channel
-    return bus.read_byte(ADC_ADDRESS)            # read value from ADC
+# -----------------------------
+# PCF8591 SETUP
+# -----------------------------
 
-def scale_to_1_10(value):#Scale this value into 1-10 range, show on LED Bar Graph
-    scaled = int((value / 255) * 10)  # convert ADC value to 0-10 range
-    if scaled < 1:
-        scaled = 1                    # keep minimum at 1
-    if scaled > 10:
-        scaled = 10                   # keep maximum at 10
-    return scaled
+I2C_ADDRESS = 0x48
+bus = smbus2.SMBus(1)
 
-def toggle_fill(channel):
-    global fill_mode
-    fill_mode = not fill_mode         # toggle fill mode when button is pressed
+# -----------------------------
+# SHIFT REGISTER CLASS
+# -----------------------------
 
-
-# Shift register class
 class ShiftRegister:
+
     def __init__(self, data_pin=22, clock_pin=17, latch_pin=27):
-        self.data_pin = data_pin      # DS pin
-        self.clock_pin = clock_pin    # SHCP pin
-        self.latch_pin = latch_pin    # STCP pin
-        self._setup()                 # run setup immediately
 
-    def _setup(self):
-        GPIO.setmode(GPIO.BCM)                    # use BCM numbering
-        GPIO.setup(self.data_pin, GPIO.OUT)       # data pin is output
-        GPIO.setup(self.clock_pin, GPIO.OUT)      # shift clock pin is output
-        GPIO.setup(self.latch_pin, GPIO.OUT)      # latch clock pin is output
+        self.data_pin = data_pin
+        self.clock_pin = clock_pin
+        self.latch_pin = latch_pin
 
-        GPIO.output(self.data_pin, GPIO.LOW)      # start data pin LOW
-        GPIO.output(self.clock_pin, GPIO.LOW)     # start shift clock LOW
-        GPIO.output(self.latch_pin, GPIO.LOW)     # start latch clock LOW
+        self.setup()
+
+    def setup(self):
+
+        GPIO.setup(self.data_pin, GPIO.OUT)
+        GPIO.setup(self.clock_pin, GPIO.OUT)
+        GPIO.setup(self.latch_pin, GPIO.OUT)
 
     def write_one_bit(self, bit):
-        GPIO.output(self.data_pin, GPIO.HIGH if bit else GPIO.LOW)  # put bit on DS
-        GPIO.output(self.clock_pin, GPIO.HIGH)                      # pulse shift clock HIGH
-        GPIO.output(self.clock_pin, GPIO.LOW)                       # back LOW
+
+        GPIO.output(self.data_pin, bit)
+
+        GPIO.output(self.clock_pin, GPIO.HIGH)
+        GPIO.output(self.clock_pin, GPIO.LOW)
 
     def copy_to_storage_register(self):
-        GPIO.output(self.latch_pin, GPIO.HIGH)  # pulse latch HIGH
-        GPIO.output(self.latch_pin, GPIO.LOW)   # back LOW
 
-    def reset_storage_register(self):
-        self.shift_out_16bit(0)  # send 16 zeros to turn all LEDs off
+        GPIO.output(self.latch_pin, GPIO.HIGH)
+        GPIO.output(self.latch_pin, GPIO.LOW)
 
-    def write_byte(self, data_byte):
-        mask = 0b10000000                 # start with the leftmost bit
-        for _ in range(8):                # repeat for 8 bits
-            bit = (data_byte & mask) != 0 # get current bit
-            self.write_one_bit(bit)       # send current bit
-            mask >>= 1                    # shift mask right
+    def write_byte(self, value):
+
+        for i in range(7, -1, -1):
+
+            bit = (value >> i) & 1
+            self.write_one_bit(bit)
 
     def shift_out_16bit(self, value):
-        high_byte = (value >> 8) & 0xFF   # upper 8 bits
-        low_byte = value & 0xFF           # lower 8 bits
 
-        self.write_byte(high_byte)        # send high byte
-        self.write_byte(low_byte)         # send low byte
-        self.copy_to_storage_register()   # latch result to outputs
+        high_byte = (value >> 8) & 0xFF
+        low_byte = value & 0xFF
+
+        self.write_byte(high_byte)
+        self.write_byte(low_byte)
+
+        self.copy_to_storage_register()
 
     def clear(self):
-        self.reset_storage_register()     # clear LEDs
 
+        self.shift_out_16bit(0)
 
-# LED bar graph class
+# -----------------------------
+# LED BAR CLASS
+# -----------------------------
+
 class LedBarGraph:
+
     def __init__(self, shift_register):
-        self.shift_register = shift_register   # store shift register object
+
+        self.shift_register = shift_register
 
     def set_pattern(self, value, fill=False):
+
         if value < 0:
             value = 0
+
         if value > 10:
             value = 10
 
         if value == 0:
-            pattern = 0                    # all LEDs off
+            pattern = 0
+
         elif fill:
-            pattern = (1 << value) - 1     # fill LEDs up to value
+            pattern = (1 << value) - 1
+
         else:
-            pattern = 1 << (value - 1)     # turn on only one LED
+            pattern = 1 << (value - 1)
 
-        self.shift_register.shift_out_16bit(pattern)  # send pattern to LED bar
+        self.shift_register.shift_out_16bit(pattern)
 
-    def clear(self):
-        self.shift_register.clear()        # clear all LEDs
+# -----------------------------
+# ADC READ FUNCTION
+# -----------------------------
 
+def read_channel(channel):
 
-# Buzzer setupCreate a low pitch tone for lower values, and increase the pitch of the sound while the analog value increases
-GPIO.setmode(GPIO.BCM)       # use BCM numbering
-buzzer_pin = 12              # buzzer connected to GPIO 12
-GPIO.setup(buzzer_pin, GPIO.OUT)
-buzzer_pwm = GPIO.PWM(buzzer_pin, 200)  # create PWM on buzzer pin with start frequency 200 Hz
-buzzer_pwm.start(0)                     # start PWM with duty cycle 0 (silent)
+    bus.write_byte(I2C_ADDRESS, 0x40 | (channel & 0x03))
+    bus.read_byte(I2C_ADDRESS)       # dummy read (previous conversion)
+    return bus.read_byte(I2C_ADDRESS) # 0-255
 
-# Button setup
-BUTTON_PIN = 20#Use button GPIO 20 to toggle between “filling” the LED Bar graph, or just showing a single LED (event/interrupt)
-GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)  # button as input with pull-up
-GPIO.add_event_detect(BUTTON_PIN, GPIO.FALLING, callback=toggle_fill, bouncetime=200)
+# -----------------------------
+# GLOBAL FILL MODE
+# -----------------------------
 
-# Create objects
+fill_mode = False
+
+# -----------------------------
+# BUTTON INTERRUPT
+# -----------------------------
+
+def toggle_fill(channel):
+
+    global fill_mode
+
+    fill_mode = not fill_mode
+
+    print("Fill mode:", fill_mode)
+
+# -----------------------------
+# MAIN PROGRAM
+# -----------------------------
+
+GPIO.setmode(GPIO.BCM)
+
+GPIO.setup(BUTTON, GPIO.IN, pull_up_down=GPIO.PUD_UP)
+
+GPIO.add_event_detect(
+    BUTTON,
+    GPIO.FALLING,
+    callback=toggle_fill,
+    bouncetime=300
+)
+
+GPIO.setup(BUZZER, GPIO.OUT)
+
+buzzer_pwm = GPIO.PWM(BUZZER, 100)
+
+buzzer_pwm.start(50)
+
 shift_reg = ShiftRegister()
+
 led_bar = LedBarGraph(shift_reg)
 
 try:
+
     while True:
-        adc_value = read_adc(A2)                     # read potentiometer from channel A2
-        scaled_value = scale_to_1_10(adc_value)      # convert to 1-10
 
-        led_bar.set_pattern(scaled_value, fill_mode) # show value on LED bar
+        # read potentiometer on A2
+        analog_value = read_channel(2)
 
-        frequency = 200 + (scaled_value - 1) * 80    # map value to buzzer pitch
-        buzzer_pwm.ChangeFrequency(frequency)        # change sound frequency
-        buzzer_pwm.ChangeDutyCycle(50)               # turn buzzer on with 50% duty cycle
+        # scale to 1-10
+        led_value = int((analog_value / 255) * 10)
 
-        time.sleep(0.1)                              # small delay
+        if led_value == 0:
+            led_value = 1
+
+        # display on LED bar
+        led_bar.set_pattern(led_value, fill_mode)
+
+        # scale frequency
+        frequency = 100 + int((analog_value / 255) * 1000)
+
+        buzzer_pwm.ChangeFrequency(frequency)
+
+        time.sleep(0.05)
 
 except KeyboardInterrupt:
+
     pass
 
 finally:
-    buzzer_pwm.ChangeDutyCycle(0)  # turn buzzer silentMake sure the buzzer stops outputting sound when the program ends.
-    buzzer_pwm.stop()              # stop PWM
-    led_bar.clear()                # turn LEDs off
-    GPIO.cleanup()                 # reset GPIO pins
+
+    # stop buzzer
+    buzzer_pwm.stop()
+
+    # clear LEDs
+    shift_reg.clear()
+
+    GPIO.cleanup()

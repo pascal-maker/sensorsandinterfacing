@@ -7,23 +7,19 @@ BUTTON_2 = 16#Button GPIO 16
 BUTTON_3 = 21#Button GPIO 21
 BUTTON_4 = 26#Button GPIO 26
 
-X_JOYSTICK = 0  # ADS1115 channel 0 (joystick X-axis)
-Y_JOYSTICK = 1  # ADS1115 channel 1 (joystick Y-axis)
+X_JOYSTICK = 0  # PCF8591 channel 0 (joystick X-axis)
+Y_JOYSTICK = 1  # PCF8591 channel 1 (joystick Y-axis)
 
-chip = 0x48          # ADS1115 default I2C address
+chip = 0x48          # PCF8591 default I2C address
 bus = smbus2.SMBus(1)  # I2C bus 1 on Raspberry Pi
 
 
 def read_channel(channel):
-    # configure ADS1115: single-ended on given channel, ±2.048V, single-shot, 128 SPS
-    config_high = 0xC5 | (channel << 4)
-    bus.write_i2c_block_data(chip, 0x01, [config_high, 0x83])
-    time.sleep(0.01)  # wait for conversion to finish (~7.8 ms at 128 SPS)
-    data = bus.read_i2c_block_data(chip, 0x00, 2)
-    raw = (data[0] << 8) | data[1]
-    if raw > 32767:
-        raw -= 65536
-    return max(0, min(1023, raw * 1023 // 32767))  # scale to 0-1023
+    # PCF8591: send control byte (0x40 | channel) then read one byte (0-255)
+    bus.write_byte(chip, 0x40 | (channel & 0x03))
+    bus.read_byte(chip)          # dummy read — returns previous conversion
+    raw = bus.read_byte(chip)    # actual 8-bit ADC value (0-255)
+    return raw * 4               # scale to 0-1020 to match 10-bit thresholds
 
 # setup
 GPIO.setmode(GPIO.BCM)
@@ -155,26 +151,25 @@ if __name__ == "__main__":
                 pattern = 0b0001100000
 
             # left side
-            elif value < 450:#if the value is less than 450
-
-                leds = int((450 - value) / 90)#calculate the number of LEDs to turn on
-
-                pattern = 0#turn off all the LEDs
-
-                for i in range(leds + 2):#loop through the LEDs
-                    pattern |= (1 << i)#turn on the LEDs
+            elif value < 450:
+                leds = int((450 - value) / 90)
+                pattern = 0
+                for i in range(leds + 2):
+                    pos = 4 - i  # start at bit 4 (adjacent to center), go left
+                    if pos >= 0:
+                        pattern |= (1 << pos)
 
             # right side
-            else:#if the value is greater than 550
-
-                leds = int((value - 550) / 90)#calculate the number of LEDs to turn on
-
-                pattern = 0#turn off all the LEDs
-
-                for i in range(leds + 2):#loop through the LEDs
-                    pattern |= (1 << (9 - i))#turn on the LEDs
+            else:
+                leds = int((value - 550) / 90)
+                pattern = 0
+                for i in range(leds + 2):
+                    pos = 5 + i  # start at bit 5 (adjacent to center), go right
+                    if pos <= 9:
+                        pattern |= (1 << pos)
 
             shift_reg.shift_out_16bit(pattern)#send the pattern to the 2 shift registers
+            print(f"X: {value}  pattern: {pattern:010b}")
             
             
 
