@@ -1,47 +1,66 @@
 import time
-from shift_register import ShiftRegister# we import shift_register.py so we can use its functions
+from shift_register import ShiftRegister
 
-class LedMatrix8x8:# led matrix class
-    ROW_DELAY = 0.0005# this is the delay between rows in ms
+class LedMatrix8x8:
+    # 0.5 ms pause between rows — gives the shift register time to latch
+    # each row before the next one is sent
+    ROW_DELAY = 0.0005
 
-    def __init__(self, shift_register):# constructor
-        self.shift_register = shift_register# we pass the shift register object to the matrix
-        self.row_data = [0x00] * 8# this is the data for the rows
+    def __init__(self, shift_register):
+        self.shift_register = shift_register
+        # row_data holds the pixel state for all 8 rows.
+        # Each byte represents one row: bit x = 1 means pixel at column x is on.
+        self.row_data = [0x00] * 8
 
-    def toggle_pixel(self, x, y):# this function toggles a pixel
-        self.row_data[y] ^= (1 << x)# we toggle the pixel at (x, y)
+    def toggle_pixel(self, x, y):
+        # XOR flips bit x in row y — turns the pixel on if it was off, off if it was on,
+        # without touching any other pixels in that row
+        self.row_data[y] ^= (1 << x)
 
-    def get_pixel(self, x, y):# this function gets the pixel at (x, y)
-        return (self.row_data[y] >> x) & 1# we get the pixel at (x, y)
+    def get_pixel(self, x, y):
+        # Shift row byte right by x so bit x lands at position 0, then mask with 1
+        # to read just that bit. Returns 1 if on, 0 if off.
+        return (self.row_data[y] >> x) & 1
 
-    def clear(self):# this function clears the matrix
-        self.row_data = [0x00] * 8# we set all the pixels to off
+    def clear(self):
+        # Reset all 8 row bytes to 0x00 — every pixel off
+        self.row_data = [0x00] * 8
 
-    def refresh_once(self, cursor_x=None, cursor_y=None, cursor_visible=False):# this function refreshes the matrix once
-        for row in range(8):# we loop through each row
-            row_byte = 1 << row# we set the row byte
-            col_byte = self.row_data[row]# we get the column byte
+    def refresh_once(self, cursor_x=None, cursor_y=None, cursor_visible=False):
+        # Row scanning: drive one row at a time, cycling through all 8.
+        # The rows switch fast enough that the eye sees the full matrix lit at once.
+        for row in range(8):
+            row_byte = 1 << row           # selects which row to activate (one bit set)
+            col_byte = self.row_data[row] # pixel on/off data for this row
 
-            if cursor_visible and cursor_y == row:# if the cursor is visible and the cursor y is equal to the row
-                col_byte ^= (1 << cursor_x)# we toggle the pixel at (x, y)
+            # Cursor overlay: XOR the cursor's column bit into this row's data.
+            # This makes the cursor blink on top of existing pixel state — it doesn't overwrite it.
+            if cursor_visible and cursor_y == row:
+                col_byte ^= (1 << cursor_x)
 
-            col_byte = ~col_byte & 0xFF# we invert the column byte
+            # Invert columns — the matrix hardware uses active-low column logic,
+            # so all bits must be flipped before sending
+            col_byte = ~col_byte & 0xFF
 
-            # If your matrix is wrong, swap this line with the alternative below
-            value = (col_byte << 8) | row_byte# we combine the column byte and the row byte
+            # Pack into a 16-bit value: high byte = column data, low byte = row select.
+            # Both are sent together in one shift register write.
+            value = (col_byte << 8) | row_byte
 
-            # Alternative:
-            # value = (row_byte << 8) | col_byte# this is the alternative way to combine the column byte and the row byte
+            # Alternative if the display appears mirrored or wrong:
+            # value = (row_byte << 8) | col_byte
 
+            # LSB_TO_MSB matches the bit order of this matrix's wiring
             self.shift_register.shift_out_16bit(
-                value,#
-                direction=ShiftRegister.LSB_TO_MSB# this is the direction of the shift register
+                value,
+                direction=ShiftRegister.LSB_TO_MSB
             )
 
-            time.sleep(self.ROW_DELAY)#
+            time.sleep(self.ROW_DELAY)
 
-    def blank(self):# this function blanks the matrix
+    def blank(self):
+        # 0x00FF → high byte 0x00 (all columns off after inversion logic),
+        # low byte 0xFF (no specific row selected) — turns the whole display dark
         self.shift_register.shift_out_16bit(
-            0x00FF,# this is the value to be shifted out
-            direction=ShiftRegister.LSB_TO_MSB# this is the direction of the shift register
+            0x00FF,
+            direction=ShiftRegister.LSB_TO_MSB
         )

@@ -30,65 +30,77 @@ def main():#this is the main function
     shift_reg = ShiftRegister()#we create a shift register object
     matrix = LedMatrix8x8(shift_reg)#we create a led matrix object
 
-    cursor_x = 0#this is the cursor x position
-    cursor_y = 0#this is the cursor y position
+    # cursor position on the 8x8 grid — (0,0) is top-left
+    cursor_x = 0
+    cursor_y = 0
 
-    cursor_visible = True#this is the cursor visibility
-    last_blink = time.time()#this is the last blink time
-    last_move = 0#this is the last move time
+    cursor_visible = True        # controls whether the cursor LED is on right now (toggled for blinking)
+    last_blink = time.time()     # timestamp of the last blink flip
+    last_move = 0                # timestamp of the last cursor move (used for debouncing)
 
-    last_joy_state = GPIO.HIGH#this is the last joy state
+    last_joy_state = GPIO.HIGH   # previous joystick click state — used to detect a falling edge (press event)
 
     try:
         while True:
-            now = time.time()#this is the current time
+            now = time.time()
 
-            if now - last_blink > BLINK_PERIOD:#if the blink period has passed
-                cursor_visible = not cursor_visible#we toggle the cursor visibility
-                last_blink = now#we update the last blink time
+            # --- Cursor blinking ---
+            # Every BLINK_PERIOD seconds, flip cursor_visible so the cursor flashes on and off
+            if now - last_blink > BLINK_PERIOD:
+                cursor_visible = not cursor_visible
+                last_blink = now
 
-            if now - last_move > MOVE_DEBOUNCE:#if the move debounce time has passed
-                moved = False#this is a flag to check if the cursor was moved
+            # --- Button movement with debounce ---
+            # MOVE_DEBOUNCE prevents the cursor from flying across the grid when a button is held;
+            # only one move is registered per debounce window
+            if now - last_move > MOVE_DEBOUNCE:
+                moved = False
 
-                if pressed(BTN_UP):#if the up button is pressed
-                    cursor_y = max(0, cursor_y - 1)#we decrease the cursor y position
-                    moved = True#we set the moved flag to true
+                if pressed(BTN_UP):
+                    cursor_y = max(0, cursor_y - 1)  # clamp to top edge
+                    moved = True
 
-                elif pressed(BTN_DOWN):#if the down button is pressed
-                    cursor_y = min(7, cursor_y + 1)#we increase the cursor y position
-                    moved = True#we set the moved flag to true
+                elif pressed(BTN_DOWN):
+                    cursor_y = min(7, cursor_y + 1)  # clamp to bottom edge
+                    moved = True
 
-                elif pressed(BTN_LEFT):#if the left button is pressed
-                    cursor_x = max(0, cursor_x - 1)#we decrease the cursor x position
-                    moved = True#we set the moved flag to true
+                elif pressed(BTN_LEFT):
+                    cursor_x = max(0, cursor_x - 1)  # clamp to left edge
+                    moved = True
 
-                elif pressed(BTN_RIGHT):#if the right button is pressed
-                    cursor_x = min(7, cursor_x + 1)#we increase the cursor x position
-                    moved = True#we set the moved flag to true
+                elif pressed(BTN_RIGHT):
+                    cursor_x = min(7, cursor_x + 1)  # clamp to right edge
+                    moved = True
 
-                if moved:#if the cursor was moved
-                    last_move = now#we update the last move time
-                    cursor_visible = True#we set the cursor visibility to true
-                    last_blink = now#we update the last blink time
-                    print("Move ->", (cursor_x, cursor_y))#we print the cursor position
+                if moved:
+                    last_move = now
+                    # snap cursor back to visible and reset blink timer so you always see it after moving
+                    cursor_visible = True
+                    last_blink = now
+                    print("Move ->", (cursor_x, cursor_y))
 
-            joy_state = GPIO.input(JOY_CLICK)#this is the joy state
+            # --- Joystick click — toggle pixel (falling-edge detection) ---
+            joy_state = GPIO.input(JOY_CLICK)
 
-            if last_joy_state == GPIO.HIGH and joy_state == GPIO.LOW:#if the last joy state is high and the joy state is low
-                matrix.toggle_pixel(cursor_x, cursor_y)#we toggle the pixel at (x, y)
+            # HIGH→LOW transition means the button was just pressed (not held)
+            if last_joy_state == GPIO.HIGH and joy_state == GPIO.LOW:
+                matrix.toggle_pixel(cursor_x, cursor_y)  # permanently flip the LED at the cursor
 
-                state = "ON" if matrix.get_pixel(cursor_x, cursor_y) else "OFF"#
-                cursor_visible = True#we set the cursor visibility to true
-                last_blink = now#we update the last blink time
+                state = "ON" if matrix.get_pixel(cursor_x, cursor_y) else "OFF"
+                cursor_visible = True   # make cursor visible so you see where you just toggled
+                last_blink = now
 
-                print(f"Toggled pixel {(cursor_x, cursor_y)} to {state}")#we print the pixel state
+                print(f"Toggled pixel {(cursor_x, cursor_y)} to {state}")
 
-            last_joy_state = joy_state#we update the last joy state
+            last_joy_state = joy_state  # store state for next iteration's edge detection
 
-            matrix.refresh_once(cursor_x, cursor_y, cursor_visible)#we refresh the matrix once
+            # --- Refresh display ---
+            # Redraws the full matrix every loop, overlaying the blinking cursor at (cursor_x, cursor_y)
+            matrix.refresh_once(cursor_x, cursor_y, cursor_visible)
 
-    except KeyboardInterrupt:#if there is a keyboard interrupt
-        print("Exiting...")#we print that we are exiting
+    except KeyboardInterrupt:
+        # Ctrl+C raises KeyboardInterrupt; catch it here for a clean exit instead of a traceback
+        print("Exiting...")
 
     finally:
         try:
