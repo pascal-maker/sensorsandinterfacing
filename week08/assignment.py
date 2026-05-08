@@ -12,7 +12,7 @@ import time
 # -----------------------------
 
 # Push button connected to GPIO 20
-BUTTON = 20
+BUTTON = 20#
 
 # Buzzer connected to GPIO 12
 BUZZER = 12
@@ -166,13 +166,13 @@ COMMANDS = [
     0xF4   # CH7
 ]
 
-def read_channel(channel):
+def read_channel(channel):# read potentiometer on ADC channel A2
 
-    command = COMMANDS[channel]
+    command = COMMANDS[channel]# read potentiometer on ADC channel A2
 
-    bus.write_byte(I2C_ADDRESS, command)
+    bus.write_byte(I2C_ADDRESS, command)# read potentiometer on ADC channel A2
 
-    return bus.read_byte(I2C_ADDRESS)
+    return bus.read_byte(I2C_ADDRESS)# read potentiometer on ADC channel A2
 
 # -----------------------------
 # GLOBAL FILL MODE
@@ -188,14 +188,14 @@ fill_mode = False
 
 # This function runs automatically
 # when button interrupt happens
-def toggle_fill(channel):
+def toggle_fill(channel):#
 
-    global fill_mode
+    global fill_mode# fill mode toggling
 
     # Toggle True/False
-    fill_mode = not fill_mode
+    fill_mode = not fill_mode# fill mode toggling
 
-    print("Fill mode:", fill_mode)
+    print("Fill mode:", fill_mode)# fill mode toggling
 
 # -----------------------------
 # MAIN PROGRAM
@@ -216,58 +216,58 @@ GPIO.add_event_detect(
 )
 
 # Setup buzzer pin as OUTPUT
-GPIO.setup(BUZZER, GPIO.OUT)
+GPIO.setup(BUZZER, GPIO.OUT)# buzzer setup
 
 # Create PWM signal on buzzer
 # Start at 100 Hz
-buzzer_pwm = GPIO.PWM(BUZZER, 100)
+buzzer_pwm = GPIO.PWM(BUZZER, 100)# buzzer setup
 
 # Start PWM with 50% duty cycle
-buzzer_pwm.start(50)
+buzzer_pwm.start(50)# 
 
 # Create shift register object
-shift_reg = ShiftRegister()
+shift_reg = ShiftRegister()# shift register object
 
 # Create LED bar graph object
-led_bar = LedBarGraph(shift_reg)
+led_bar = LedBarGraph(shift_reg)# led bar graph object
 
 try:
 
-    while True:
+    while True:# infinite loop
 
         # Read potentiometer on ADC channel A2
-        analog_value = read_channel(2)
+        analog_value = read_channel(2)# read potentiometer on ADC channel A2
 
         # Scale ADC value (0-255)
         # into LED value (0-10)
-        led_value = int((analog_value / 255) * 10)
+        led_value = int((analog_value / 255) * 10)# scaling
 
         # Show LEDs
-        led_bar.set_pattern(led_value, fill_mode)
+        led_bar.set_pattern(led_value, fill_mode)#showing LEDs
 
         # Convert analog value into frequency
         # Lower potentiometer -> lower pitch
         # Higher potentiometer -> higher pitch
-        frequency = 100 + int((analog_value / 255) * 1000)
+        frequency = 100 + int((analog_value / 255) * 1000)# converting analog value into frequency
 
         # Change buzzer frequency dynamically
-        buzzer_pwm.ChangeFrequency(frequency)
+        buzzer_pwm.ChangeFrequency(frequency)# changing buzzer frequency
 
         # Small delay
-        time.sleep(0.05)
+        time.sleep(0.05)# small delay
 
 # Stop safely with CTRL+C
-except KeyboardInterrupt:
+except KeyboardInterrupt:# Stop safely with CTRL+C
 
     pass
 
 finally:
 
     # Stop PWM signal
-    buzzer_pwm.stop()
+    buzzer_pwm.stop()# stop PWM signal
 
     # Turn off LEDs
-    shift_reg.clear()
+    shift_reg.clear()# turn off LEDs
 
     # Reset GPIO pins
-    GPIO.cleanup()
+    GPIO.cleanup()    # reset GPIO pins    
