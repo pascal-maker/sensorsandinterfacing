@@ -60,7 +60,7 @@ class FourDigit7Segment:#a class that controls the four digit 7 segment display
         digit_byte = self.DIGITS[digit_index]#gets the digit byte for each digit
         segment_byte = self.segment_byte(char)#gets the segment byte for each digit
 
-        value = (digit_byte << 8) | segment_byte
+        value = (digit_byte << 8) | segment_byte#creates the value to be shifted
         self._sr.shift_out_16bit(value)#shifts the segment byte to the shift register
 
     def refresh_once(self):#refreshes the display once

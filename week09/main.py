@@ -5,14 +5,14 @@ from fourdigit7segmentclass import FourDigit7Segment
 from displaythread import DisplayThread
 from shiftregister import ShiftRegister
 LETTER_A = [
-    0b00111100,#this is the pattern for the letter A
-    0b01000010,#this is the pattern for the letter A
-    0b01000010,#this is the pattern for the letter A
-    0b01111110,#this is the pattern for the letter A
-    0b01000010,#this is the pattern for the letter A
-    0b01000010,#this is the pattern for the letter A
-    0b01000010,#this is the pattern for the letter A
-    0b00000000,#this is the pattern for the letter A
+    0b00111100,#this is the pattern for the letter 
+    0b01000010,#this is the pattern for the letter 
+    0b01000010,#this is the pattern for the letter
+    0b01111110,#this is the pattern for the letter 
+    0b01000010,#this is the pattern for the letter 
+    0b01000010,#this is the pattern for the letter 
+    0b01000010,#this is the pattern for the letter 
+    0b00000000,#this is the pattern for the letter 
 ]
 
 try:
