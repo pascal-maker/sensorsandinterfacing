@@ -1,28 +1,29 @@
-import smbus
-import time
-import math
-import threading
+import smbus # lets the pi talk to the lcd & mpu
+import time # 
+import math#used to calculate the angle in degrees
+import threading# stop threads, events etc
 
 # LCD Settings
 I2C_ADDR = 0x27#address of the lcd
 LCD_WIDTH = 16#width of the lcd 16 characters per line
-LCD_CHR = 1#character mode send a normal character
+LCD_CHR = 1#character mode send a normal character this is text
 LCD_CMD = 0#command mode send an lcd command
 
 LCD_LINE_1 = 0x80#first line of the lcd
 LCD_LINE_2 = 0xC0#second line of the lcd
 
-ENABLE = 0b00000100#enable pin to toggle the lcd so it reads data
+ENABLE = 0b00000100#enable pin to toggle the lcd so it reads data lcd only reds data when enable bit is high
 
 # MPU settings
 MPU_ADDR = 0x68#address of the mpu
-PWR_MGMT_1 = 0x6B#power management register
+PWR_MGMT_1 = 0x6B#power management register power sleep state
 
-ACCEL_XOUT_H = 0x3B#start register for x accelerometer data
-ACCEL_YOUT_H = 0x3D#start register for y accelerometer data
-ACCEL_ZOUT_H = 0x3F#start register for z accelerometer data
-
-ACCEL_SCALE = 16384.0#scale factor to convert raw accelerometer data to g
+ACCEL_XOUT_H = 0x3B#start register for x accelerometer data left/right
+ACCEL_YOUT_H = 0x3D#start register for y accelerometer data up/down
+ACCEL_ZOUT_H = 0x3F#start register for z accelerometer data forwards/backwards
+#why _h becuse accelerometer data is 16 bit so it needs 2 bytes to store the data first byte is high 2nd byte is low
+#so we need to add 2 to each consecutive register address
+ACCEL_SCALE = 16384.0#scale factor to convert raw accelerometer data to g g_force = raw_value / 16384.0
 
 bus = smbus.SMBus(1)#initialize the i2c bus
 
@@ -78,10 +79,41 @@ def read_word_2c(addr):#read a 16-bit signed value from the mpu
     high = bus.read_byte_data(MPU_ADDR, addr)#read the high byte from the mpu
     low = bus.read_byte_data(MPU_ADDR, addr + 1)#read the low byte from the mpu
 
-    val = (high << 8) | low#combine the high and low bytes into a 16-bit value
+    val = (high << 8) | low#combine the high and low bytes into a 16-bit value two complements negetive numbers use the first bit to check if it is negative 0 is positive 1 is negative for example 
+
+    #1000000000000000 in binary is negative 0x8000
+
+    #0111111111111111 in binary is positive 0x7FFF
+    # so we check if the value is greater than or equal to 0x8000 if it is we subtract 65536 from it to get the correct value
+    # if it is not we just return the value as it is
+    # 16 bits number max value 0x7FFF 65535 min value 0x8000 -65536
+    # in other words if the first bit is 1 it's negative
+    # if the first bit is 0 it's positive
+    # so val >= 0x8000 is checking if the first bit is 1
+    
 
     if val >= 0x8000:#if the value is negative
-        val = val - 65536
+        val = val - 65536#subtract 65536 to get the correct value 2's complement 5. Why subtract 65536?
+
+        #Because:
+
+        #65536 = 2^16
+
+        #A 16-bit signed number “wraps around”.
+
+        #So to convert:
+
+        #65500
+
+        #into signed form:
+
+        #we do:
+
+        #65500 - 65536
+
+        #Result:
+
+        #-36
 
     return val
 

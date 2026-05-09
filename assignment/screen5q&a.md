@@ -104,3 +104,37 @@ combined_g = sqrt(x² + y² + z²)
 ```
 
 So the combined value includes acceleration from all three axes.
+
+---
+
+## Exam practice questions
+
+### Q1. Why does `mpu_init()` write `0` to register `0x6B`, and what happens if you skip it?
+
+The MPU6050 starts in sleep mode by default every time it powers on. Writing `0` to the `PWR_MGMT_1` register (`0x6B`) wakes it up. If you skip this the sensor stays asleep and returns no data — the LCD would show zeros for every axis.
+
+---
+
+### Q2. Why does reading one axis value require two bytes?
+
+Each axis value is 16 bits of data. The I2C bus can only send 8 bits at a time, so the sensor stores the result across two registers — one for the high byte and one for the low byte. You must read both and combine them yourself.
+
+---
+
+### Q3. What does `val = (high << 8) | low` do, and what would break if you just returned `high`?
+
+`high << 8` shifts the high byte 8 positions left to make room for the low byte. `| low` slots the low byte into those 8 empty positions, producing one 16-bit number. If you returned `high` alone you would only have 8 bits of data and lose all the precision stored in the low byte.
+
+---
+
+### Q4. Why is `val - 65536` used when `val >= 0x8000`?
+
+This handles two's complement. In a 16-bit signed number, if the first (most significant) bit is `1`, the number is negative. `0x8000` is where that bit switches on. Subtracting 65536 (= 2¹⁶, the total range of a 16-bit number) converts the raw unsigned value into the correct negative number.
+
+Example: raw value `65500 - 65536 = -36`
+
+---
+
+### Q5. Where does `16384` come from, and what does a result of `1.0` mean?
+
+The MPU6050 in its default ±2g range is calibrated so that `16384 raw units = 1g`. This comes from the chip's datasheet. Dividing the raw value by `16384` converts it to g-force. A result of `1.0` means 1g — the normal pull of Earth's gravity. If the sensor is lying flat and still, the Z axis should read approximately `1.0`.

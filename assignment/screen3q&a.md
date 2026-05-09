@@ -83,3 +83,40 @@ It maps the ADC value from `0–255` to `0–16` LCD blocks. Then it creates a f
 ### 5. What would happen when the joystick moves left or right?
 
 The analog voltage changes, so the ADC value changes. A lower value creates a shorter bar, and a higher value creates a longer bar.
+
+---
+
+## Exam practice questions
+
+### Q1. What is an ADC and why does the joystick need one to talk to the Raspberry Pi?
+
+ADC stands for Analog-to-Digital Converter. The Raspberry Pi only has digital GPIO pins — it can only read `0` or `1`. The joystick is a potentiometer that outputs a continuously varying voltage (0V to 3.3V). The ADC measures that voltage and converts it into a digital number (0–255) that the Pi can work with.
+
+---
+
+### Q2. In `read_adc()`, why do you write first and then read?
+
+The ADC does not continuously measure. It only starts a conversion when you send it a command telling it which channel to read. So you write first to say "start measuring channel X", wait 10ms for it to finish the conversion, then read the result back. Write = start measuring, read = get the result.
+
+---
+
+### Q3. Where does the 0 to 255 range come from?
+
+It comes from the ADS7830 being an **8-bit ADC**. 8 bits can represent 2⁸ = 256 different values, giving a range of 0 to 255. The joystick produces a voltage — the ADC decides how precisely to measure it. The range is a property of the ADC, not the joystick.
+
+---
+
+### Q4. What does `make_bar()` produce when the joystick is centred (value ≈ 128)?
+
+```python
+blocks = int((128 / 255) * 16)  # = 8
+return "#" * 8 + "-" * 8
+```
+
+The LCD shows: `########--------` — 8 filled blocks and 8 empty blocks, half full.
+
+---
+
+### Q5. Why does the ADC need a channel number?
+
+The ADS7830 has 8 analog input pins (channels 0–7). Multiple sensors can be wired to the same ADC chip. The channel number tells the ADC which input pin to measure. In this project, the joystick X axis is wired to channel 5, so `X_CHANNEL = 5` tells the ADC to read that specific pin.

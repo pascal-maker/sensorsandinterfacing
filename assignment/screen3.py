@@ -54,19 +54,20 @@ def lcd_clear():#clear the lcd
     lcd_send_byte(0x01, LCD_CMD)#clear the lcd
     time.sleep(0.0005)    
 
-def ads7830_command(channel):#send a command to the adc
-    return 0x84 | ((((channel << 2) | (channel >> 1)) & 0x07) << 4)#rearraing th ebtis of the chnanel number intot he fromat requried by the ADS7830
-#creates the correct coommadn byte fdor the ADC so the rapberry pu can tell the adc whichbanolog channel msut eb read.
-def read_adc(channel):#read the value from the adc
-    cmd = ads7830_command(channel)#send the command to the adc
-    bus.write_byte(ADC_ADDR, cmd)#send the command to the adc
-    time.sleep(0.01)#wait a tiny bit
-    return bus.read_byte(ADC_ADDR)#read the value from the adc
+def ads7830_command(channel):#send a command to the adc reads this anolog channel
+    return 0x84 | ((((channel << 2) | (channel >> 1)) & 0x07) << 4)#rearrange the bits of the channel number into the format required by the ADS7830 take channel number rearrange bits creates adc command byte
+#creates the correct command byte for the ADC so the rapberry pi can tell the adc which analog channel must be read.
+def read_adc(channel):#read the value from the adc anolog channel
+    cmd = ads7830_command(channel)#build the command adc byte
+    bus.write_byte(ADC_ADDR, cmd)#send the command to the adc to start the conversion
+    time.sleep(0.01)#wait a tiny bit for the adc to process the command
+    return bus.read_byte(ADC_ADDR)#read the value from the adc gets the digital value from the adc usually between 0 and 255.
 
-def make_bar(value):#make a bar graph
-    blocks = int((value/255)*16)  #calculate the number of blocks to display
-    return "#" * blocks + "-" * (16-blocks)#return the bar
-def wait_or_stop(stop_event,seconds):#waits for a specific amount of time or until the stop event is set
+def make_bar(value):#make a bar graph create fake lcd bar graph
+    blocks = int((value/255)*16)  #calculate the number of blocks to display convert joystick value into 0-> 16 blocks because lcd width is 16 characters long
+    return "#" * blocks + "-" * (16-blocks)#return the bar so 16 # characters for full value 0 for value 0 8 # and 8 - for half value etc...
+    
+def wait_or_stop(stop_event,seconds):#waits for a specific amount of time or until the stop event is set so safely.
     steps = int(seconds/0.1)#calculate the number of steps to wait
     for _ in range(steps):#loop through the steps
         if stop_event.is_set():#check if the stop event is set
@@ -77,8 +78,8 @@ def run(stop_event):
     while not stop_event.is_set():#keeps running until the stop event is set
         x_val = read_adc(X_CHANNEL)#read the current X-axis joystick value and store it in x_val
 
-        line1 = make_bar(x_val)#make a bar graph the raw avlue joystick value and tuern tonto a afke elcd abr graph
-        line2 = f"VRX=> {x_val}"#format the value to be displayed on the lcd make a textstrign showing rhe actuald ecminal value
+        line1 = make_bar(x_val)#make a bar graph the raw joystick value and turn it into a fake lcd bar graph
+        line2 = f"VRX=> {x_val}"#format the value to be displayed on the lcd make a textstring showing the actual decimal value
 
         lcd_string(line1, LCD_LINE_1)#display the formatted value on the lcd
         lcd_string(line2, LCD_LINE_2)#display the formatted value on the lcd
@@ -88,13 +89,13 @@ def run(stop_event):
     lcd_clear()#clear the lcd
 
 
-if __name__ == "__main__":
-    import threading
+if __name__ == "__main__":#this code allows the program to be run directly
+    import threading#imports the threading module so we can use threads
 
-    stop_event = threading.Event()
+    stop_event = threading.Event()#create a stop event to stop the loop
 
     try:
-        run(stop_event)
-    except KeyboardInterrupt:
-        stop_event.set()
-        lcd_clear()
+        run(stop_event)#start the run function
+    except KeyboardInterrupt:#if the user presses ctrl+c
+        stop_event.set()#stop the run function
+        lcd_clear()#clear the lcd

@@ -115,3 +115,35 @@ inet 192.168.1.20/24
 
 The variable stays `"Not Connected"`, because that is the default value before reading the command output. So the LCD will show `"Not Connected"` instead of an IP address.
 
+---
+
+## Exam practice questions
+
+### Q1. Your script uses `subprocess.check_output("ip a", shell=True, text=True)`. What does each argument do, and why is `text=True` important?
+
+`"ip a"` is the Linux command that shows network information. `shell=True` runs it through the shell. `text=True` returns the output as a normal Python string instead of bytes. Without `text=True` you get raw bytes (`b'...'`), and string methods like `.splitlines()`, `.strip()`, and `.split()` will not work on bytes.
+
+---
+
+### Q2. Why is the byte split into two nibbles in `lcd_send_byte()`, and what does `| 0x08` do?
+
+The I2C backpack only has 4 data lines wired to the LCD, so a full 8-bit byte cannot be sent at once. It is split into an upper nibble (top 4 bits) and a lower nibble (bottom 4 bits), each sent separately with an ENABLE pulse in between. `| 0x08` sets the backlight bit on the PCF8574 chip — remove it and the display logic still works but the screen goes dark.
+
+---
+
+### Q3. In `get_ip_addresses()`, how does the script know whether an IP belongs to WiFi or LAN?
+
+It uses a state machine. `current_adapter` tracks which section of the `ip a` output is being read. When a line contains `wlan0:`, the state is set to `"wlan0"`. When it contains `eth0:`, the state is set to `"eth0"`. When a line starts with `inet`, the IP address is extracted and stored under whichever adapter is currently active. The key term is **state machine** — the variable remembers which section you are in.
+
+---
+
+### Q4. What does `lcd_toggle_enable()` do, and why are `time.sleep()` calls needed?
+
+It pulses the ENABLE pin HIGH then LOW. The LCD only reads data on the falling edge (HIGH→LOW) — without this pulse the LCD ignores everything on the data pins. The `time.sleep(0.0005)` delays are critical because the LCD is much slower than the Pi CPU. Without the delays the Pi moves on before the LCD has finished reading, producing garbage output.
+
+---
+
+### Q5. Why use `threading.Event` instead of a plain boolean to stop the loop?
+
+A plain boolean has no thread-safety guarantee — when one thread writes `running = False`, the other thread may not see that change immediately due to CPU caching or instruction reordering. `threading.Event` is specifically designed so the signal is guaranteed to be visible across threads immediately.
+

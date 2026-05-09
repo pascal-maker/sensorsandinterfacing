@@ -1,21 +1,21 @@
-import smbus
-import time
-import threading
-import queue
-from ble.bluetooth_uart_server import ble_gatt_uart_loop
+import smbus#import smbus to communicate with the lcd
+import time#import time to wait for the lcd
+import threading#import threading to run the ble gatt uart loop in a separate thread
+import queue#import queue to pass data between threads
+from ble.bluetooth_uart_server import ble_gatt_uart_loop#import the ble gatt uart loop function
 
 # LCD Settings
-I2C_ADDR = 0x27
-LCD_WIDTH = 16
-LCD_CHR = 1
-LCD_CMD = 0
+I2C_ADDR = 0x27#this is the address of the lcd
+LCD_WIDTH = 16#this is the width of the lcd
+LCD_CHR = 1#this is the character mode of the lcd
+LCD_CMD = 0#this is the command mode of the lcd
 
-LCD_LINE_1 = 0x80
-LCD_LINE_2 = 0xC0
+LCD_LINE_1 = 0x80#this is the first line of the lcd
+LCD_LINE_2 = 0xC0#this is the second line of the lcd
 
-ENABLE = 0b00000100
+ENABLE = 0b00000100#this is the enable pin of the lcd
 
-bus = smbus.SMBus(1)
+bus = smbus.SMBus(1)#this is the i2c bus of the lcd
 
 # BLE queues
 rx_q = queue.Queue()   # incoming BLE messages
@@ -84,7 +84,7 @@ def run(stop_event):#run the program
     ble_thread = threading.Thread(#create a thread to run the ble gatt uart loop
         target=ble_gatt_uart_loop,#target is the function to run in the thread
         args=(rx_q, tx_q, device_name),#arguments to pass to the function
-        daemon=True#set as a daemon thread so it will close when the main thread closes
+        daemon=True#set as a daemon thread so it will close when the main thread closes without daemon True the prigram will get stuck in the ble gatt uart loop when the user presses ctrl c it would nevver fully exit even after ctrl + c is pressed you would have   to force kill it
     )
     ble_thread.start()#start the thread
 
@@ -101,15 +101,15 @@ def run(stop_event):#run the program
             line2 = incoming[16:32]#get the next 16 characters of the message
 
             lcd_clear()#clear the lcd
-            lcd_string(line1, LCD_LINE_1)
-            lcd_string(line2, LCD_LINE_2)
+            lcd_string(line1, LCD_LINE_1)#display the first line of the message
+            lcd_string(line2, LCD_LINE_2)#display the second line of the message
 
         except queue.Empty:
-            pass
+            pass#do nothing if the queue is empty
 
-        wait_or_stop(stop_event, 0.1)
+        wait_or_stop(stop_event, 0.1)#wait for the stop event to be set
 
-    lcd_clear()
+    lcd_clear()#clear the lcd
 
 
 if __name__ == "__main__":
@@ -119,4 +119,4 @@ if __name__ == "__main__":
         run(stop_event)#run the program
     except KeyboardInterrupt:#if the user presses ctrl+c
         stop_event.set()#set the stop event
-        lcd_clear()
+        lcd_clear()#clear the lcd

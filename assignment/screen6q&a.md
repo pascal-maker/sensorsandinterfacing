@@ -80,3 +80,35 @@ Because BLE messages may arrive as bytes. The LCD needs normal text, so bytes ar
 ### 5. Why do you split the message with `incoming[:16]` and `incoming[16:32]`?
 
 Because the LCD is 16 by 2. The first 16 characters go on line 1, and the next 16 characters go on line 2.
+
+---
+
+## Exam practice questions
+
+### Q1. Why does the BLE server run in a separate thread instead of the main loop?
+
+The BLE UART loop must run continuously. If it ran in the main loop it would block — the main loop would be stuck inside the BLE function and never reach the LCD code, causing the screen to freeze.
+
+---
+
+### Q2. Why is a `queue.Queue()` used instead of a plain variable to pass messages between threads?
+
+Thread safety. Two threads reading and writing the same plain variable at the same time can corrupt the data. `queue.Queue()` is specifically designed to be safe for multiple threads to use simultaneously — one thread puts messages in, the other takes them out, without clashing.
+
+---
+
+### Q3. What does `timeout=0.1` do in `rx_q.get(timeout=0.1)`, and what happens if no message arrives?
+
+It prevents the program from blocking forever while waiting for a BLE message. If no message arrives within 0.1 seconds, `queue.Empty` is raised. The code catches that with `except queue.Empty: pass` and does nothing, then loops again. Without the timeout the program would block there indefinitely and never check the stop event.
+
+---
+
+### Q4. Why might BLE data arrive as bytes, and what does `errors="ignore"` protect against?
+
+BLE transmits raw bytes over the air. The program must decode them into a Python string before the LCD can display them. `errors="ignore"` protects against bytes that are not valid UTF-8 characters — without it Python would crash with a `UnicodeDecodeError`. Ignoring them silently drops the bad bytes and displays the rest of the message normally.
+
+---
+
+### Q5. What does `daemon=True` mean and why is it important?
+
+A daemon thread automatically closes when the main thread exits. Without `daemon=True` the BLE thread would keep running even after Ctrl+C is pressed and the program would never fully exit — you would have to force-kill it.

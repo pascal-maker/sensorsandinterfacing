@@ -6,16 +6,16 @@ import threading#import threading to run the code in a separate thread
 I2C_ADDR = 0x27#address of the lcd
 LCD_WIDTH = 16#width of the lcd 16 characters per line
 LCD_CHR = 1#character mode send a normal character
-LCD_CMD = 0
+LCD_CMD = 0#command mode send a command
 
-LCD_LINE_1 = 0x80
-LCD_LINE_2 = 0xC0
+LCD_LINE_1 = 0x80#the first line of the lcd
+LCD_LINE_2 = 0xC0#the second line of the lcd
 
-ENABLE = 0b00000100
+ENABLE = 0b00000100#enable pin
 
 # ADC constants
 ADC_ADDR = 0x48#address of the adc
-Y_CHANNEL = 4#joystick y channel
+Y_CHANNEL = 4#joystick y channel the pontentiometer is wired to channel 4 of the adc
 
 bus = smbus.SMBus(1)#initialize the i2c bus
 
@@ -45,8 +45,8 @@ def lcd_init():#initialize the lcd set 4 bit mode turn display on set 2 lines cl
     lcd_send_byte(0x06, LCD_CMD)#entry mode set increment cursor
     lcd_send_byte(0x0C, LCD_CMD)#display on cursor off blink off
     lcd_send_byte(0x28, LCD_CMD)#function set 4 bit mode 2 lines 5x8 dots
-    lcd_send_byte(0x01, LCD_CMD)
-    time.sleep(0.002)
+    lcd_send_byte(0x01, LCD_CMD)#clear the lcd
+    time.sleep(0.002)#wait a tiny bit
 
 
 def lcd_string(message, line):#make sure the message is 16 characters long
@@ -93,8 +93,8 @@ def run(stop_event):#run the screen
     while not stop_event.is_set():#run the screen until the stop event is set
         y_val = read_adc(Y_CHANNEL)#read the current y-axis joystick value and store it in y_val
 
-        line1 = make_bar(y_val)#make a bar graph the raw avlue joystick value and tuern tonto a afke elcd abr graph
-        line2 = f"VRY=> {y_val}"#format the value to be displayed on the lcd make a textstrign showing rhe actuald ecminal value
+        line1 = make_bar(y_val)#make a bar graph the raw avlue joystick value and turn it into a series of # and - symbols
+        line2 = f"VRY=> {y_val}"#format the value to be displayed on the lcd make a textstring showing the decimal value
 
         lcd_string(line1, LCD_LINE_1)#send the first line to the lcd
         lcd_string(line2, LCD_LINE_2)#send the second line to the lcd

@@ -205,3 +205,52 @@ It formats the number as binary with 4 digits. For example, decimal `3` becomes 
 
 To update the LCD only when the button combination changes. Without `last_value`, the LCD would keep clearing and rewriting even when nothing changed.
 
+---
+
+## Exam practice questions
+
+### Q1. Your buttons use `GPIO.PUD_UP`. What does that mean, and why does `GPIO.LOW` mean the button IS pressed?
+
+`GPIO.PUD_UP` enables an internal pull-up resistor that holds the pin at 3.3V (HIGH) by default. When the button is pressed it physically connects the pin to GND, pulling it LOW. So not pressed = HIGH, pressed = LOW. The resistor is what creates this behaviour — without it the pin would float and give random readings.
+
+---
+
+### Q2. Why do you convert `GPIO.LOW` to `1` in `read_buttons_bits()`? What would break if you stored the raw GPIO value?
+
+With pull-up resistors, a pressed button gives `GPIO.LOW` which equals `0` in raw form. That is backwards — logically a pressed button should contribute `1` to the nibble. If you passed the raw value into `make_nibble()`, pressed buttons would contribute nothing and released buttons would contribute their value, producing a completely inverted nibble.
+
+---
+
+### Q3. Walk through `make_nibble()` with b1=1, b2=0, b3=1, b4=1.
+
+Each button is assigned a bit position using left shift (`<<`):
+
+```
+b1 << 3 = 1000  (value 8)
+b2 << 2 = 0000  (value 0)
+b3 << 1 = 0010  (value 2)
+b4      = 0001  (value 1)
+```
+
+OR combines them: `1000 | 0000 | 0010 | 0001 = 1011 = 11`
+
+b1 is the most significant bit, b4 is the least significant.
+
+---
+
+### Q4. Why is `if value != last_value` in the main loop? What happens if you remove it?
+
+Without it the LCD clears and rewrites on every loop iteration even when no buttons have changed. This causes constant flickering, unnecessary I2C traffic, and wastes CPU. The check means the LCD only updates when something actually changes.
+
+---
+
+### Q5. Why is `last_value` initialised to `-1`? What breaks if you use `0` instead?
+
+A nibble can only be 0 to 15 — those are the only possible values from 4 bits. `-1` can never appear as a real button reading, so on the very first loop iteration `value != last_value` is always True, forcing the LCD to update immediately at startup. If you used `0` instead and all buttons started unpressed (value = 0), the condition would be False and the LCD would show nothing until a button was pressed.
+
+---
+
+### Q6. Why can a nibble only hold values 0 to 15?
+
+A nibble is 4 bits. Each bit can only be 0 or 1, giving 16 possible combinations (2⁴ = 16). The smallest is `0000 = 0` and the largest is `1111 = 15`. Negative numbers like -1 cannot be represented in this system.
+
