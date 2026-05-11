@@ -11,7 +11,7 @@ try:
         value = GPIO.input(btn)# read value of btn and store it in value
         GPIO.output(LED, not value)# write opposite of btn value to the led pin
         print('The value of pin {0} is {1}'.format(btn,value))#verbose print btn pin and value
-        time.sleep(0.5)# wait for 0.1 seconds
+        time.sleep(0.5)# wait for 0.5 seconds
 except KeyboardInterrupt:
     pass   #ignore the keyboard interrupt    
 

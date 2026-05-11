@@ -17,12 +17,13 @@ try:
             led_on = not led_on#toggle led
             GPIO.output(led,led_on)#output led 
            
-           if led_on:# check if led is on
-            print("led is on")#printing
-           else:
-            print("led is off")#printing
-           time.sleep(0.2) # a debounce 
-           previous_btn_state = current_btn_state# updating the previous state with the current state
+            if led_on:# check if led is on
+                print("led is on")#printing
+            else:
+                print("led is off")#printing
+            
+            time.sleep(0.2) # a debounce 
+        previous_btn_state = current_btn_state# updating the previous state with the current state
            
 except KeyboardInterrupt:#ignoring the keyboard interrupt
     pass
@@ -37,8 +38,4 @@ finally:#cleaning up the GPIO pins
 #OUTPUT:#
 #HIGH = on#
 #LOW  = off#
-        
-
-
-
 
