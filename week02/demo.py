@@ -18,17 +18,17 @@ os.makedirs("data",exist_ok=True)#create a directory called data if it does not 
 
 #callback function
 # runs whenever button state changes
-def button_changed(channel):#this function will run whenever a button is pressed or released a callbak function you dont call it yourself gpio.calls it autmically whenver a button state chnages sates. it automically whenver a button chanegs state it records the current time 
+def button_changed(channel):#this function will run whenever a button is pressed or released a callback function you dont call it yourself gpio.calls it automatically whenver a button state changes states it automically whenver a button changes state it records the current time 
     timestamp = datetime.now()#sets the timestamp to the current time records the current time
-    state = GPIO.input(channel)#sets the state to the current state of the button reads whetether the pin is high (1) or low (0)
+    state = GPIO.input(channel)#sets the state to the current state of the button reads whether the pin is high (1) or low (0)
     button_name = buttons[channel]#sets the button name to the current button looks up human-readable name from the button list  dict using the pin number 
     events.append((timestamp, button_name, state))#adds the timestamp, button name and state to the events list append all three as a tuple to events
     print(f"{timestamp} - {button_name} changed state to {state}")#prints the timestamp, button name and state outputs the data to the terminal
 
-#add edge decection
-for pin in buttons:#run once for each button in the list register the save callback on ever pin the buttons dict ,so buttons share one handler te channel paramreter inside callback tells you which button changed so it can distinguish between events from different pins revister the same callback on evry pin in the buttons dict, so all buttons share one handler. the channel parameter inside the callback tells you which pin is fired.
-    GPIO.add_event_detect(pin, GPIO.BOTH, callback=button_changed, bouncetime=200)#detects edge decection on the button means the callback fires on both edges rising and falling button rpessed and released not just one direction  bouncetime is the time in milliseconds to wait before detecting another edge so ignore noisy/multiple triggers from a single physical press
-
+#add edge detection
+for pin in buttons:#run once for each button in the list register the save callback on ever pin the buttons dict ,so buttons share one handler te channel paramreter inside callback tells you which button changed so it can distinguish between events from different pins registers the same callback on evry pin in the buttons dict, so all buttons share one handler. the channel parameter inside the callback tells you which pin is fired.
+    GPIO.add_event_detect(pin, GPIO.BOTH, callback=button_changed, bouncetime=200)#detects edge detection on the button means the callback fires on both edges rising and falling button pressed and released not just one direction  bouncetime is the time in milliseconds to wait before detecting another edge so ignore noisy/multiple triggers from a single physical press
+#gpio.both means that the callback function will be called when the button is pressed or released GPIO.RISING only when the button is pressed GPIO.FALLING only when the button is released
 print("Tracking button state changes.")#prints that button state changes are being tracked
 print("Press Ctrl+C to save and exit.")#prints that the user should press Ctrl+C to save and exit
 try:
@@ -38,7 +38,7 @@ except KeyboardInterrupt:#runs when the user presses Ctrl+C
     print("Exiting...")#prints that the program is exiting
 finally:#runs after the user presses Ctrl+C
     filename_time = datetime.now().strftime("%Y-%m-%d_%H-%M-%S")#sets the filename time to the current time creates timestamp string like 2026-05-01_14-30-22 used in both output files so each run produces uniquely named files and old data isnt overwritten.
-    csv_file = f"data/{filename_time}_button_states.csv"#sets the csv file name to the current time f string means it will substi
+    csv_file = f"data/{filename_time}_button_states.csv"#sets the csv file name to the current time f string means it will substiute
     image_file = f"data/{filename_time}_button_states.png"#sets the image file name to the current time    substitutes this variable into the string so that the image file name is different every time the program is run this ensures that the previous image file is not overwritten and a new image file is created every time the program is run
 
     #Save csv
@@ -75,4 +75,4 @@ finally:#runs after the user presses Ctrl+C
         plt.close()#closes the figure to save memory
         print(f"Saved data to {image_file}")#prints that the data has been saved to the image file
     GPIO.cleanup()#resets the GPIO pins
-    print("GPIO cleanup completed")#prints that the GPIO pins have been reset all gpio pins back to their default input state. without this pin can stuy in thei trlast configrued mode, whuch can cuase issues or unexcecped beier the netx tiem the script runs.
+    print("GPIO cleanup completed")#prints that the GPIO pins have been reset all gpio pins back to their default input state. without this pin can stay in their last configured mode, which can cause issues or unexepected behavior the next time the script runs.

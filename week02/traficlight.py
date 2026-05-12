@@ -11,13 +11,13 @@ red = 11#define the led pins
 GPIO.setup(green,GPIO.OUT)#set the leds as outputs 
 GPIO.setup(yellow,GPIO.OUT)#set the leds as outputs
 GPIO.setup(red,GPIO.OUT)#set the leds as outputs
-
+#why all off works is becase it sets all the pins to low/off regadless of what they were before so even if one was high it is turned off no matter what no
 
 def all_off():#function to turn off all the lights
     GPIO.output(green,GPIO.LOW)#turns off the green light
     GPIO.output(yellow,GPIO.LOW)#turns off the yellow light
     GPIO.output(red,GPIO.LOW)#turns off the red light
-    
+#all off turns the lights off regadless of what they were before this is becuase it sets them to low/off no matter what    
 
 
 try:
