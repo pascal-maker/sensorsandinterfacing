@@ -12,7 +12,7 @@ ADC_ADDR = 0x48   # ADS7830 I2C address of the ADS7830 chip on the bus
 CMD_R    = 0x94   # AIN2 (red pot) bit 7 = 1 means single-ended.   this is the command to read the red pot from the ADC
 CMD_G    = 0xD4   # AIN3 (green pot) bit 7 = 1 means single-ended.   this is the command to read the green pot from the ADC
 CMD_B    = 0xA4   # AIN4 (blue pot) bit 7 = 1 means single-ended.   this is the command to read the blue pot from the ADC
-VREF     = 5.0# reference voltage (5V). Used to convert the raw ADC value (0–255) back into a real voltage: voltage = value * 5.0 / 255
+VREF     = 3.3# reference voltage (5V). Used to convert the raw ADC value (0–255) back into a real voltage: voltage = value * 5.0 / 255
 #Bits 6-4 = which channel (AIN0-AIN7) 3-2 = power mode (keep ADC on between reads)       
 # CMD_r,CMD_G CMD_B are not adresses of the pots themselves,they are instructions to send to the ADC chip saying please read the voltage on the pin where that pot is connected.                                                
 # --- GPIO setup ---
