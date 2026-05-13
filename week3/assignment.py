@@ -17,7 +17,7 @@ for pin in pins:# Setup inputs in pull up mode
 GPIO.setup(led, GPIO.OUT)
 
 # Shared variable
-bcd_value = 0#stores the value of the bcd code when its pressed 0 is the starting value meaning all buttons are unpressed and the LED will stay on for 1 second and repeat every second aslo it willhold the decimal number (0-15) from whichever bcd buttons are pressed
+bcd_value = 0#stores the value of the bcd code when its pressed 0 is the starting value meaning all buttons are unpressed and the LED will stay on for 1 second and repeat every second also it willhold the decimal number (0-15) from whichever bcd buttons are pressed
 
 
 # -----------------------
@@ -26,7 +26,7 @@ bcd_value = 0#stores the value of the bcd code when its pressed 0 is the startin
 def bcd_changed(channel):#when a button is pressed this function is called
     global bcd_value#gives us acess to change the global variable
 
-    btn_num = pins.index(channel) + 1  # which button (1-4) triggered the event chanel is the gpio pin number that triggered the event searches the list and returns rhe position fo that list
+    btn_num = pins.index(channel) + 1  # which button (1-4) triggered the event channel is the gpio pin number that triggered the event searches the list and returns the position for that list
     action = "PRESSED" if GPIO.input(channel) == GPIO.LOW else "RELEASED"# checks the state of the pin that triggered the event if it is LOW its pressed since we are using pull up mode if its HIGH its released
     print(f"\nButton {btn_num} (GPIO {channel}) {action}")#prints which button was pressed and what it did
 
@@ -53,7 +53,7 @@ for pin in pins:# uses the pins list
 # -----------------------
 try:
     while True:
-        if bcd_value == 0:#if the bcd value is 0 then turn on the LED for 1 second and then turn it off IF ALL BUTTONS ARE UNPRESSED VALUE = 0 LED TURNS ON AND STAYS ON FOR 1 SECOND. THEN THE LOOP REPEATS AND KEEPS IT ON AGAIN SO EFFIECLERY THE LED JUST STAYS ON WHILE NOTHING IS PRESSED.
+        if bcd_value == 0:#if the bcd value is 0 then turn on the LED for 1 second and then turn it off IF ALL BUTTONS ARE UNPRESSED VALUE = 0 LED TURNS ON AND STAYS ON FOR 1 SECOND. THEN THE LOOP REPEATS AND KEEPS IT ON AGAIN SO EFFIECiently THE LED JUST STAYS ON WHILE NOTHING IS PRESSED.
             GPIO.output(led, GPIO.HIGH)#turns led on
             time.sleep(1)#waits for 1 second
         else:

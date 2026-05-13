@@ -34,7 +34,7 @@ def button_callback(channel):#this is the callback function that is called when 
             press_time = None# reset so a stray second release event doesn't log a bogus duration
 
 
-GPIO.add_event_detect(btn, GPIO.BOTH, callback=button_callback, bouncetime=200)#tells the pi to watch for changes on the button
+GPIO.add_event_detect(btn, GPIO.BOTH, callback=button_callback, bouncetime=200)#tells the pi to watch for changes on the button when the button is pressed or released
 
 try:
     while True:

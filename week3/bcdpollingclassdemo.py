@@ -24,7 +24,7 @@ try:
             raw = GPIO.input(pin)   # 0 or 1 straight from the pin reads the pyschical voltage on the pn - returns either 0 low or 1 high
 
             # Invert: pull-up makes active-low logic, so a LOW pin means bit = 1
-            bit = 1 - raw# pins are set to pull up, so they read as 1 unless the counter is pulling them low, so this inverts the reading to get the correct bit value low should be 1 here the logic is flipped: 0 pin stays high 1 pin goes low ounter says bit = 1  →  pin goes LOW  →  raw = 0  →  1 - 0 = 1  ✓
+            bit = 1 - raw# pins are set to pull up, so they read as 1 unless the counter is pulling them low, so this inverts the reading to get the correct bit value low should be 1 here the logic is flipped: 0 pin stays high 1 pin goes low counter says bit = 1  →  pin goes LOW  →  raw = 0  →  1 - 0 = 1  ✓
   #Counter says bit = 0  →  pin stays HIGH → raw = 1  →  1 - 1 = 0  
 
             print(f"Bit {i} = {bit}", end="  ")  # Print each bit individually prints each bit on the same line as t's read . end =" "replaces the default new line with spaces so all 4 bits appear side by side 
