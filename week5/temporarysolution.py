@@ -10,12 +10,11 @@ import smbus
 ADC_ADDRESS = 0x48
 
 # Potentiometer channel
-# In your current working test this is channel 4
 POT_CHANNEL = 4
 
 # GPIO pins
 SERVO_PIN = 18
-BUTTON_PIN = 17
+BUTTON_PIN = 20
 
 # Servo PWM settings
 PWM_FREQUENCY = 50      # 50 Hz -> servo period is 20 ms
