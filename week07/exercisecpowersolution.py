@@ -23,7 +23,7 @@ pwm2.start(0)#starting the motor pin 2
 
 #ADC
 ADC_ADDRESS = 0x48#setting the adc address
-POT_CHANNEL = 1 #setting the pot channel
+POT_CHANNEL = 3 #setting the pot channel
 bus = smbus.SMBus(1)#setting the bus
 
 # -----------------------------
@@ -34,16 +34,16 @@ LEFT = 1#setting the mode to left
 RIGHT = 2#setting the mode to right
 
 mode = OFF#setting the mode to off
-last_button_state = 0#setting the last button state to 1
+last_button_state = 1#setting the last button state to 1
+COMMANDS = [
+    0x84, 0xC4, 0x94, 0xD4,# commands to read adc values for each channel
+    0xA4, 0xE4, 0xB4, 0xF4#
+]
+
 def read_adc(channel):#function to read the adc value
-    control_byte = 0x40 | channel#setting the control byte for the adc
-    bus.write_byte(ADC_ADDRESS, control_byte)#writing the control byte to the adc
-
-    bus.read_byte(ADC_ADDRESS)   # dummy read
-    time.sleep(0.01)#waiting for 0.01 seconds
-
+    command = COMMANDS[channel]#setting the command for the adc
+    bus.write_byte(ADC_ADDRESS, command)#writing the command to the adc
     return bus.read_byte(ADC_ADDRESS)#returning the adc value
-
 # -----------------------------
 # Main loop
 # -----------------------------
