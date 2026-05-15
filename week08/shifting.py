@@ -151,25 +151,25 @@ if __name__ == "__main__":
                 pattern = 0b0001100000
 
             # left side
-            elif value < 450:
-                leds = int((450 - value) / 90)
-                pattern = 0
-                for i in range(leds + 2):
+            elif value < 450:#if the value is less than 450
+                leds = int((450 - value) / 90)#calculate the number of LEDs to turn on
+                pattern = 0#initialize the pattern to 0
+                for i in range(leds + 2):#loop through the LEDs
                     pos = 4 - i  # start at bit 4 (adjacent to center), go left
-                    if pos >= 0:
-                        pattern |= (1 << pos)
+                    if pos >= 0:#if the position is greater than or equal to 0
+                        pattern |= (1 << pos)#turn on the LED at the current position
 
             # right side
-            else:
-                leds = int((value - 550) / 90)
-                pattern = 0
-                for i in range(leds + 2):
+            else:#if the value is greater than 450
+                leds = int((value - 550) / 90)#calculate the number of LEDs to turn on
+                pattern = 0#initialize the pattern to 0
+                for i in range(leds + 2):#loop through the LEDs
                     pos = 5 + i  # start at bit 5 (adjacent to center), go right
-                    if pos <= 9:
-                        pattern |= (1 << pos)
+                    if pos <= 9:#if the position is less than or equal to 9
+                        pattern |= (1 << pos)#turn on the LED at the current position
 
             shift_reg.shift_out_16bit(pattern)#send the pattern to the 2 shift registers
-            print(f"X: {value}  pattern: {pattern:010b}")
+            print(f"X: {value}  pattern: {pattern:010b}")#print the pattern to the console
             
             
 
