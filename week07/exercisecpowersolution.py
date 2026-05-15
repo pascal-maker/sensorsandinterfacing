@@ -23,7 +23,7 @@ pwm2.start(0)#starting the motor pin 2
 
 #ADC
 ADC_ADDRESS = 0x48#setting the adc address
-POT_CHANNEL = 0#setting the pot channel
+POT_CHANNEL = 1 #setting the pot channel
 bus = smbus.SMBus(1)#setting the bus
 
 # -----------------------------
@@ -34,12 +34,14 @@ LEFT = 1#setting the mode to left
 RIGHT = 2#setting the mode to right
 
 mode = OFF#setting the mode to off
-last_button_state = 1#setting the last button state to 1
+last_button_state = 0#setting the last button state to 1
+def read_adc(channel):#function to read the adc value
+    control_byte = 0x40 | channel#setting the control byte for the adc
+    bus.write_byte(ADC_ADDRESS, control_byte)#writing the control byte to the adc
 
-def read_adc(channel):#reading the adc value
-    control_byte = 0x40 | channel#setting the control byte
-    bus.write_byte(ADC_ADDRESS, control_byte)#writing the control byte to the bus
-    value = bus.read_byte(ADC_ADDRESS)#reading the adc value
+    bus.read_byte(ADC_ADDRESS)   # dummy read
+    time.sleep(0.01)#waiting for 0.01 seconds
+
     return bus.read_byte(ADC_ADDRESS)#returning the adc value
 
 # -----------------------------
@@ -74,3 +76,4 @@ except KeyboardInterrupt:
     pwm2.stop()
     bus.close()
     GPIO.cleanup()
+#A4 for channel 6 & channel 2 A a2 is for channel 1 and channel 5 channel 0 and 3 with joystick on gpio button     

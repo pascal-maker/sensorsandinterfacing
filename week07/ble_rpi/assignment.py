@@ -58,13 +58,13 @@ steps = (#setting the steps for the stepper motor
 # ----------------------
 # BLE queues and thread
 # ----------------------
-rx_q = queue.Queue()#setting the rx queue
-tx_q = queue.Queue()#setting the tx queue
+rx_q = queue.Queue()#setting the rx queue for data from phone to raspberry pi
+tx_q = queue.Queue()#setting the tx queue for data from raspberry pi to phone
 
 threading.Thread(
-    target=ble_gatt_uart_loop,#starting the thread
+    target=ble_gatt_uart_loop, #the thread that runs the ble gatt uart loop
     args=(rx_q, tx_q, "pj-pi-gatt-uart"),#arguments for the thread
-    daemon=True
+    daemon=True #daemon thread will exit when the main program exits automatically 
 ).start()#running the thread
 
 # ----------------------
@@ -74,7 +74,7 @@ def stop_stepper():#stopping the stepper motor
     for pin in STEPPER_PINS:#setting the pins
         GPIO.output(pin, 0)#setting the pins to output
 
-def stepper_half_turn(direction):#rotating the stepper motor in half turn direction
+def stepper_half_turn(direction):#rotating the stepper motor in half turn direction predefined in step
     global step_index#setting the step index
     for _ in range(2048):#iterating through the steps
         step_index = (step_index + direction) % 8#setting the step index
@@ -86,7 +86,7 @@ def stepper_half_turn(direction):#rotating the stepper motor in half turn direct
 def degrees_to_steps(degrees):
     return int(abs(degrees) / 360 * 4096)  # 512 cycles × 8 half-steps = 4096
 
-def stepper_turn_steps(num_steps, direction):#rotating the stepper motor in steps direction
+def stepper_turn_steps(num_steps, direction):#rotating the stepper motor in steps direction customizable by user
     global step_index#setting the step index
     for _ in range(num_steps):#iterating through the steps
         step_index = (step_index + direction) % 8#setting the step index
@@ -128,42 +128,42 @@ try:#main loop
             cmd_lower = cmd.strip().lower()#getting the command in lowercase
 
             if cmd_lower == "dc-left":#checking if the command is dc-left
-                dc_left(60)
-                tx_q.put("DC turning left")
+                dc_left(60)#turning the dc motor in left direction
+                tx_q.put("DC turning left")#printing the command
 
             elif cmd_lower == "dc-right":#checking if the command is dc-right
-                dc_right(60)
-                tx_q.put("DC turning right")
+                dc_right(60)#turning the dc motor in right direction
+                tx_q.put("DC turning right")#printing the command
 
             elif cmd_lower == "dc-stop":#checking if the command is dc-stop
-                dc_stop()
-                tx_q.put("DC stopped")
+                dc_stop()#stopping the dc motor
+                tx_q.put("DC stopped")#printing the command
 
             elif cmd_lower == "sweep-left":#checking if the command is sweep-left
-                servo_set_angle(0)
-                tx_q.put("Servo swept left")
+                servo_set_angle(0)#setting the servo angle to 0
+                tx_q.put("Servo swept left")#printing the command
 
             elif cmd_lower == "sweep-right":#checking if the command is sweep-right
-                servo_set_angle(180)
-                tx_q.put("Servo swept right")
+                servo_set_angle(180)#setting the servo angle to 180
+                tx_q.put("Servo swept right")#printing the command
 
             elif cmd_lower == "step-right":#checking if the command is step-right
                 stepper_half_turn(direction=1)#rotating the stepper motor in right direction
-                tx_q.put("Stepper half turn right")
+                tx_q.put("Stepper half turn right")#printing the command
 
             elif cmd_lower == "step-left":#checking if the command is step-left
                 stepper_half_turn(direction=-1)#rotating the stepper motor in left direction
-                tx_q.put("Stepper half turn left")
+                tx_q.put("Stepper half turn left")#printing the command
 
             elif cmd_lower.startswith("step "):#checking if the command is step
                 try:#try
-                    degrees = int(cmd.split()[1])#getting the degrees
-                    direction = 1 if degrees >= 0 else -1#setting the direction
-                    num_steps = degrees_to_steps(degrees)#calculating the steps
-                    stepper_turn_steps(num_steps, direction)#rotating the stepper motor in steps direction
-                    tx_q.put(f"Stepper moved {degrees} degrees")#printing the degrees   
-                except (IndexError, ValueError):#error handling
-                    tx_q.put("ERROR: use format like 'Step 90' or 'Step -45'")#printing the error
+                    degrees = int(cmd.split()[1])#getting the degrees second part is degrees for example step 90 is 90 degrees the [1] for what they are looking for and then convert it to integer using int() function
+                    direction = 1 if degrees >= 0 else -1#setting the direction if the degrees is greater than or equal to 0 the direction is 1 else the direction is -1
+                    num_steps = degrees_to_steps(degrees)#calculating the steps by multiplying the degrees with the steps per degree to get the total steps for the stepper motor this is used for moving the stepper motor in specific degrees this function is used to convert the degrees to steps for the stepper motor they undertand electrical pulses not degrees which is why we need to convert the degrees to steps this function is called num_steps because it is the number of steps that the stepper motor needs to take to rotate in the specified degrees 
+                    stepper_turn_steps(num_steps, direction)#rotating the stepper motor in steps direction this function is called stepper_turn_steps because it is the number of steps that the stepper motor needs to take to rotate in the specified degrees the actual movement is done in this function by taking the steps and rotating the stepper motor in steps direction this is done by taking the steps and rotating the stepper motor in steps direction this is done by taking the steps and rotating the stepper motor in steps direction this is done by taking the steps and rotating the stepper motor in steps direction
+                    tx_q.put(f"Stepper moved {degrees} degrees")#printing the degrees sending feedback to the phone so you see it int he app   
+                except (IndexError, ValueError):#error handling for index out of range or value error
+                    tx_q.put("ERROR: use format like 'Step 90' or 'Step -45'")#printing the error message for incorrect format
 
             else:#error handling
                 tx_q.put("ERROR: unknown command")#printing the error
