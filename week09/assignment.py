@@ -65,11 +65,11 @@ def main():#this is the main function
                     moved = True#sets moved to true
 
                 elif pressed(BTN_LEFT):#checks if the left button is pressed
-                    cursor_x = max(0, cursor_x - 1)  # clamp to left edge
+                    cursor_x = max(0, cursor_x - 1)  # clamp to left edge we do -1 to maje sure it does not go beyond the left edge
                     moved = True#sets moved to true
 
                 elif pressed(BTN_RIGHT):#checks if the right button is pressed
-                    cursor_x = min(7, cursor_x + 1)  # clamp to right edge prevents going to low values we have 8 rows  -1 means top left value 0 is bottom left so when we add 1 it goes to low values
+                    cursor_x = min(7, cursor_x + 1)  # clamp to right edge we do +1 to make sure it does not go beyond the right edge
                     moved = True#sets moved to true
 
                 if moved:#checks if the cursor was moved
@@ -87,7 +87,7 @@ def main():#this is the main function
 
                 state = "ON" if matrix.get_pixel(cursor_x, cursor_y) else "OFF"#gets the state of the pixel
                 cursor_visible = True   # make cursor visible so you see where you just toggled
-                last_blink = now#updates the last blink time
+                last_blink = now#updates the last blink time this evenbtually to make the red dot pernamant on the led matrix
 
                 print(f"Toggled pixel {(cursor_x, cursor_y)} to {state}")#prints the pixel state
 
