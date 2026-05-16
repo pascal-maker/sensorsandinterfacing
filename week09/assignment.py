@@ -31,8 +31,8 @@ def main():#this is the main function
     matrix = LedMatrix8x8(shift_reg)#we create a led matrix object
 
     # cursor position on the 8x8 grid — (0,0) is top-left
-    cursor_x = 0
-    cursor_y = 0
+    cursor_x = 0#the cursor x position
+    cursor_y = 0#the cursor y position
 
     cursor_visible = True        # controls whether the cursor LED is on right now (toggled for blinking)
     last_blink = time.time()     # timestamp of the last blink flip
@@ -46,61 +46,60 @@ def main():#this is the main function
 
             # --- Cursor blinking ---
             # Every BLINK_PERIOD seconds, flip cursor_visible so the cursor flashes on and off
-            if now - last_blink > BLINK_PERIOD:
-                cursor_visible = not cursor_visible
-                last_blink = now
+            if now - last_blink > BLINK_PERIOD:#checks if the blink period has passed
+                cursor_visible = not cursor_visible#flips the cursor visibility
+                last_blink = now#updates the last blink time
 
             # --- Button movement with debounce ---
             # MOVE_DEBOUNCE prevents the cursor from flying across the grid when a button is held;
             # only one move is registered per debounce window
-            if now - last_move > MOVE_DEBOUNCE:
-                moved = False
+            if now - last_move > MOVE_DEBOUNCE:#checks if the move debounce has passed
+                moved = False#sets moved to false
 
-                if pressed(BTN_UP):
-                    cursor_y = max(0, cursor_y - 1)  # clamp to top edge
-                    moved = True
+                if pressed(BTN_UP):#checks if the up button is pressed
+                    cursor_y = max(0, cursor_y - 1)  # clamp to top edge prevents going to high values we have 8 rows  -1 means top left value 0 is bottom left so when we minus 1 it goes to high values
+                    moved = True#sets moved to true
 
-                elif pressed(BTN_DOWN):
-                    cursor_y = min(7, cursor_y + 1)  # clamp to bottom edge
-                    moved = True
+                elif pressed(BTN_DOWN):#checks if the down button is pressed
+                    cursor_y = min(7, cursor_y + 1)  # clamp to bottom edge prevents going to low values we have 8 rows  -1 means top left value 0 is bottom left so when we add 1 it goes to low values
+                    moved = True#sets moved to true
 
-                elif pressed(BTN_LEFT):
+                elif pressed(BTN_LEFT):#checks if the left button is pressed
                     cursor_x = max(0, cursor_x - 1)  # clamp to left edge
-                    moved = True
+                    moved = True#sets moved to true
 
-                elif pressed(BTN_RIGHT):
-                    cursor_x = min(7, cursor_x + 1)  # clamp to right edge
-                    moved = True
+                elif pressed(BTN_RIGHT):#checks if the right button is pressed
+                    cursor_x = min(7, cursor_x + 1)  # clamp to right edge prevents going to low values we have 8 rows  -1 means top left value 0 is bottom left so when we add 1 it goes to low values
+                    moved = True#sets moved to true
 
-                if moved:
-                    last_move = now
-                    # snap cursor back to visible and reset blink timer so you always see it after moving
-                    cursor_visible = True
-                    last_blink = now
-                    print("Move ->", (cursor_x, cursor_y))
+                if moved:#checks if the cursor was moved
+                    last_move = now#updates the last move time
+                    cursor_visible = True#makes the cursor visible
+                    last_blink = now#updates the last blink time
+                    print("Move ->", (cursor_x, cursor_y))#prints the cursor position
 
             # --- Joystick click — toggle pixel (falling-edge detection) ---
-            joy_state = GPIO.input(JOY_CLICK)
+            joy_state = GPIO.input(JOY_CLICK)#gets the joystick state
 
             # HIGH→LOW transition means the button was just pressed (not held)
-            if last_joy_state == GPIO.HIGH and joy_state == GPIO.LOW:
+            if last_joy_state == GPIO.HIGH and joy_state == GPIO.LOW:#checks if the joystick was just pressed
                 matrix.toggle_pixel(cursor_x, cursor_y)  # permanently flip the LED at the cursor
 
-                state = "ON" if matrix.get_pixel(cursor_x, cursor_y) else "OFF"
+                state = "ON" if matrix.get_pixel(cursor_x, cursor_y) else "OFF"#gets the state of the pixel
                 cursor_visible = True   # make cursor visible so you see where you just toggled
-                last_blink = now
+                last_blink = now#updates the last blink time
 
-                print(f"Toggled pixel {(cursor_x, cursor_y)} to {state}")
+                print(f"Toggled pixel {(cursor_x, cursor_y)} to {state}")#prints the pixel state
 
-            last_joy_state = joy_state  # store state for next iteration's edge detection
+            last_joy_state = joy_state#stores the joystick state for the next iteration's edge detection
 
             # --- Refresh display ---
             # Redraws the full matrix every loop, overlaying the blinking cursor at (cursor_x, cursor_y)
-            matrix.refresh_once(cursor_x, cursor_y, cursor_visible)
+            matrix.refresh_once(cursor_x, cursor_y, cursor_visible)#refreshes the led matrix once
 
-    except KeyboardInterrupt:
+    except KeyboardInterrupt:#catches the keyboard interrupt
         # Ctrl+C raises KeyboardInterrupt; catch it here for a clean exit instead of a traceback
-        print("Exiting...")
+        print("Exiting...")#prints that the program is exiting
 
     finally:
         try:

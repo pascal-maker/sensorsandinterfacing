@@ -62,53 +62,53 @@ class FourDigit7Segment:
             pattern = ~pattern & 0xFF   # invert and mask to 8 bits
         return pattern
 
-    def show_one_digit(self, digit_index, char):
+    def show_one_digit(self, digit_index, char):#shows one digit on the display
         # Build a 16-bit value to send to the shift register:
         #   high byte → which digit position to activate
         #   low byte  → which segments to light up
-        digit_byte   = self.DIGITS[digit_index]
-        segment_byte = self.segment_byte(char)
-        value = (digit_byte << 8) | segment_byte
-        self._sr.shift_out_16bit(value)
+        digit_byte   = self.DIGITS[digit_index]#gets the digit byte
+        segment_byte = self.segment_byte(char)#gets the segment byte
+        value = (digit_byte << 8) | segment_byte#combines the digit byte and segment byte
+        self._sr.shift_out_16bit(value)#shifts the data out to the shift register
 
-    def refresh_once(self):
+    def refresh_once(self):#refreshes the display once
         # Multiplexing: only one digit is physically on at a time, but they cycle
         # through all 4 positions so fast (1 ms each) that the eye sees them all lit.
-        for index, char in enumerate(self.current_text):
-            self.show_one_digit(index, char)
-            time.sleep(0.001)
+        for index, char in enumerate(self.current_text):#loops through each digit
+            self.show_one_digit(index, char)#shows one digit on the display
+            time.sleep(0.001)#pauses for the refresh delay
 
-    def putValue(self, text, align="RIGHT"):
+    def putValue(self, text, align="RIGHT"):#puts a value on the display
         # Store text (max 4 chars) in current_text, padded with spaces to fill 4 positions.
-        text = str(text).upper()[:4]
-        if align == "LEFT":
-            self.current_text = text.ljust(4)
-        else:
-            self.current_text = text.rjust(4)
+        text = str(text).upper()[:4]#stores the text
+        if align == "LEFT":#checks the alignment
+            self.current_text = text.ljust(4)#puts the text on the display
+        else:#if the alignment is not left
+            self.current_text = text.rjust(4)#puts the text on the display
 
-    def putFilledValue(self, text, fill_char="0", align="RIGHT"):
+    def putFilledValue(self, text, fill_char="0", align="RIGHT"):#puts a value on the display
         # Like putValue but uses a custom fill character instead of spaces,
         # e.g. fill_char="0" turns "42" into "0042".
-        text = str(text).upper()[:4]
-        if align == "LEFT":
-            self.current_text = text.ljust(4, fill_char)
-        else:
-            self.current_text = text.rjust(4, fill_char)
+        text = str(text).upper()[:4]#stores the text
+        if align == "LEFT":#checks the alignment
+            self.current_text = text.ljust(4, fill_char)#puts the text on the display
+        else:#if the alignment is not left
+            self.current_text = text.rjust(4, fill_char)#puts the text on the display
 
-    def setCounter(self, value, align="RIGHT"):
+    def setCounter(self, value, align="RIGHT"):#sets the counter to a given value
         # Set the counter to a given value and update the display immediately.
-        self.counter = int(value)
-        self.putFilledValue(str(self.counter), fill_char="0", align="right")
+        self.counter = int(value)#sets the counter
+        self.putFilledValue(str(self.counter), fill_char="0", align="right")#puts the counter on the display
 
-    def increment(self):
+    def increment(self):#increments the counter
         # Add 1 to the counter and refresh the display.
-        self.counter += 1
-        self.putFilledValue(str(self.counter), fill_char="0", align="right")
+        self.counter += 1#increments the counter
+        self.putFilledValue(str(self.counter), fill_char="0", align="right")#puts the counter on the display
 
-    def decrement(self):
+    def decrement(self):#decrements the counter
         # Subtract 1 from the counter and refresh the display.
-        self.counter -= 1
-        self.putFilledValue(str(self.counter), fill_char="0", align="right")
+        self.counter -= 1#decrements the counter
+        self.putFilledValue(str(self.counter), fill_char="0", align="right")#puts the counter on the display
         
         
         

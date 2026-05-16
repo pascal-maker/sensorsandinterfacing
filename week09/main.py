@@ -1,9 +1,10 @@
 import RPi.GPIO as GPIO #imports the RPi.GPIO module
-import time
-from ledmatrixclass import LEDMatrix8x8
-from fourdigit7segmentclass import FourDigit7Segment
-from displaythread import DisplayThread
-from shiftregister import ShiftRegister
+GPIO.setmode(GPIO.BCM) # sets the pin numbering mode to BCM
+import time#imports the time module
+from led_matrix import LedMatrix8x8#imports the LEDMatrix8x8 class
+from fourdigit7segmentclass import FourDigit7Segment#imports the FourDigit7Segment class
+from displaythread import DisplayThread#imports the DisplayThread class
+from shift_register import ShiftRegister#imports the ShiftRegister class
 LETTER_A = [
     0b00111100,#this is the pattern for the letter 
     0b01000010,#this is the pattern for the letter 
@@ -29,8 +30,8 @@ try:
     time.sleep(2)#waits for 2 seconds
 
 
-    matrix = LEDMatrix8x8(shiftregister,common_anode=True)#creates the led matrix
-    matrix.setPattern(LETTER_A)#sets the pattern of the led matrix
+    matrix = LedMatrix8x8(shiftregister)#creates the led matrix
+    matrix.row_data = list(LETTER_A)#sets the pattern of the led matrix
     while True:
         matrix.refresh_once()
 except KeyboardInterrupt:
