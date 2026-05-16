@@ -164,7 +164,7 @@ def set_bar_graph(value, fill=False):#set bar graph pattern
     else:
 
         pattern = 1 << (value - 1)#set pattern to single LED mode for exmaple value is 4 then 4-1 is 3 then 1<<3 is 8 (binary 100) so 4th LED is on
-        
+
     shift_out_16bit(pattern)#shift out 16 bit value to shift register
 
 # ----------------------------------------
