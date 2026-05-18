@@ -27,7 +27,7 @@ CLOCK_PIN = 17 # shift register clock pin
 LATCH_PIN = 27 # shift register latch pin
 
 # Button Pin
-BUTTON_PIN = 23 # button pin for toggling the LED matrix
+BUTTON_PIN = 20 # button pin for toggling the LED matrix
 
 # Timing
 SAMPLE_INTERVAL = 1 # read potentiometer every 1 second

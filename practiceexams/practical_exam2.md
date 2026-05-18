@@ -27,9 +27,9 @@ Build a Raspberry Pi program that reads an analog potentiometer through an ADS78
 | GPIO 22 | Shift register data |
 | GPIO 17 | Shift register clock |
 | GPIO 27 | Shift register latch |
-| GPIO 23 | Push button |
+| GPIO 20 | Push button |
 
-GPIO 23 is used for the button because GPIO 17 is already used as the shift-register clock pin.
+GPIO 20 is used for the button because GPIO 17 is already used as the shift-register clock pin.
 
 ## Required Behaviour
 
