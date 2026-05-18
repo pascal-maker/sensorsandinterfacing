@@ -199,8 +199,9 @@ class CSGOBomb:
         self.last_button_press = 0# set the last button press
         self.baseline_accel = None# baseline acceleration
         self.baseline_gyro = None# baseline gyroscope
-        self.movement_threshold_accel = 0.3  # Movement sensitivity for accelerometer
+        self.movement_threshold_accel = 1.2  # Movement sensitivity for accelerometer
         self.movement_threshold_gyro = 50    # Movement sensitivity for gyroscope
+        self.movement_grace_seconds = 1.5    # Ignore movement just after planting
         self.defuse_code = [20, 21, 16, 26, 20, 21, 16]  # 7-button sequence using all 4 buttons
         self.current_input = []  # Track button presses
         self.defuse_attempts = 0# number of defuse attempts
@@ -281,8 +282,11 @@ class CSGOBomb:
     
     def check_movement(self):# check if bomb has been moved
         """Check if bomb has been moved"""
-        if self.state != STATE_ARMED or self.baseline_accel is None:
-            return False
+        if self.state != STATE_ARMED or self.baseline_accel is None:#check if the state is armed or baseline acceleration is None
+            return False# return false#ignore if not armed or baseline not set
+
+        if time.time() - self.plant_time < self.movement_grace_seconds:# ignore sensor noise after planting
+            return False# return false#ignore if time is less than movement grace seconds
         
         try:
             # Read current position
@@ -322,7 +326,7 @@ class CSGOBomb:
     
     def update(self):# update the bomb
         """Main update loop"""
-        current_time = time.time()
+        current_time = time.time()# get the current time
         
         if self.state == STATE_IDLE:# check if the state is idle
             # Blue LED when idle
@@ -416,11 +420,11 @@ def plant_button_callback(channel):# handle plant button press
     current_time = time.time()
     if current_time - last_plant_press > 0.3:# check if current time minus last plant button press time is greater than or equal to 0.3
         last_plant_press = current_time# set last plant button press time to current time
-        if bomb.state == STATE_IDLE:
+        if bomb.state == STATE_IDLE:# check if the state is idle
             bomb.plant_bomb()# plant the bomb
-        elif bomb.state == STATE_ARMED:
+        elif bomb.state == STATE_ARMED:# check if the state is armed
             bomb.add_button_to_code(channel)# add button to code
-        elif bomb.state in [STATE_DEFUSED, STATE_EXPLODED]:
+        elif bomb.state in [STATE_DEFUSED, STATE_EXPLODED]:# check if the state is defused or exploded
             bomb.reset()# reset the bomb
 
 def defuse_button_callback(channel):  # handle defuse button press  

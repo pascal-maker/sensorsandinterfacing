@@ -1,6 +1,6 @@
-# VIP.py Script Explanation
+# practicalexam1.py Script Explanation
 
-`vip.py` is a Raspberry Pi bomb-defusal simulator. It uses buttons, an I2C LCD, an RGB LED, a buzzer, and an MPU6050 motion sensor to create an interactive game.
+`practicalexam1.py` is a Raspberry Pi bomb-defusal simulator. It uses buttons, an I2C LCD, an RGB LED, a buzzer, and an MPU6050 motion sensor to create an interactive game.
 
 ## Hardware Used
 
