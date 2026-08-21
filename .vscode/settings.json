@@ -1,0 +1,22 @@
+{
+  "files.exclude": {
+    "**/.DS_Store": true,
+    "**/._*": true,
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/~$*": true
+  },
+  "search.exclude": {
+    "**/.git": true,
+    "**/.DS_Store": true,
+    "**/._*": true,
+    "**/__pycache__": true,
+    "**/*.pyc": true,
+    "**/~$*": true,
+    "**/calibration_images": true,
+    "**/*.jpg": true,
+    "**/*.png": true,
+    "**/*.mp4": true
+  },
+  "explorer.compactFolders": false
+}
