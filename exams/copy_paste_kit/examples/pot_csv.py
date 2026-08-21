@@ -1,14 +1,12 @@
 import os
-import sys
 import time
 
 os.environ.setdefault("RPI_LGPIO_CHIP", "0")
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import RPi.GPIO as GPIO
 
-from adc_reader import ADCReader, Potentiometer
-from csv_logger import CSVLogger
+from exams.copy_paste_kit.adc_reader import ADCReader, Potentiometer
+from exams.copy_paste_kit.csv_logger import CSVLogger
 
 
 def main():

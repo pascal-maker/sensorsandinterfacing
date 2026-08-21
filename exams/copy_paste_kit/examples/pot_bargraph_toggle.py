@@ -1,17 +1,15 @@
 import os
-import sys
 import time
 
 os.environ.setdefault("RPI_LGPIO_CHIP", "0")
-sys.path.append(os.path.dirname(os.path.dirname(__file__)))
 
 import RPi.GPIO as GPIO
 
-from adc_reader import ADCReader, Potentiometer
-from button_toggle import ButtonToggle
-from csv_logger import CSVLogger
-from led_bar_graph import LedBarGraph
-from shift_register import ShiftRegister
+from exams.copy_paste_kit.adc_reader import ADCReader, Potentiometer
+from exams.copy_paste_kit.button_toggle import ButtonToggle
+from exams.copy_paste_kit.csv_logger import CSVLogger
+from exams.copy_paste_kit.led_bar_graph import LedBarGraph
+from exams.copy_paste_kit.shift_register import ShiftRegister
 
 
 def main():

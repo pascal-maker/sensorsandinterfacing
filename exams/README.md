@@ -15,5 +15,5 @@ Exam 3 is the former `KhalilAhmadRetake.py`. It was renamed by topic and refacto
 ## Other material
 
 - [`theory/`](theory/) contains study notes, a question bank, and bit-operation practice questions.
-- [`copy-paste-kit/`](copy-paste-kit/) contains reusable hardware classes and small examples.
+- [`copy_paste_kit/`](copy_paste_kit/) contains reusable hardware classes and small examples.
 - [`bcd-7segment-auto-off-logger/`](bcd-7segment-auto-off-logger/) is a focused BCD/four-digit-display assignment.

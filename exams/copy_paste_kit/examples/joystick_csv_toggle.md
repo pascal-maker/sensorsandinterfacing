@@ -6,22 +6,21 @@ Read the joystick X and Y values from the ADC. Detect the direction as LEFT,
 RIGHT, UP, DOWN, or CENTER. Save each reading to a CSV file with a timestamp.
 Use the joystick button to toggle CSV logging on and off.
 
-## Files copied
+## Files used
 
-- `main.py`
-- `adc_reader.py`
-- `joystick.py`
-- `button_toggle.py`
-- `csv_logger.py`
+- `joystick_csv_toggle.py`
+- `../adc_reader.py`
+- `../joystick.py`
+- `../button_toggle.py`
+- `../csv_logger.py`
 
 ## Run
 
 ```bash
-cd exams/copy-paste-kit/exam_simulation_joystick
-python3 main.py
+python3 -m exams.copy_paste_kit.examples.joystick_csv_toggle
 ```
 
-The CSV should appear in this same folder as:
+The CSV appears in the current working directory as:
 
 ```text
 joystick_log.csv

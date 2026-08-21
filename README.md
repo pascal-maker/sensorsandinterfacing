@@ -32,7 +32,7 @@ Most programs access Raspberry Pi GPIO or I2C hardware directly. Run them on a c
 ├── exams/
 │   ├── practical/                 Three descriptively named practical exams
 │   ├── theory/                    Study guides and question banks
-│   ├── copy-paste-kit/            Reusable exam components/examples
+│   ├── copy_paste_kit/            Reusable exam components/examples
 │   └── bcd-7segment-auto-off-logger/
 ├── main.py                        Legacy combined hardware demo
 ├── mpu6050.py                     Standalone MPU-6050 driver
@@ -43,7 +43,7 @@ Week 10 is not present in the current course material.
 
 ## Exam resources
 
-The [`exams/copy-paste-kit/README.md`](exams/copy-paste-kit/README.md) explains the small reusable modules for ADC input, buttons, CSV logging, joysticks, LED matrices, shift registers, and seven-segment displays. Complete examples are under [`exams/copy-paste-kit/examples/`](exams/copy-paste-kit/examples/).
+The [`exams/copy_paste_kit/README.md`](exams/copy_paste_kit/README.md) explains the small reusable modules for ADC input, buttons, CSV logging, joysticks, LED matrices, shift registers, and seven-segment displays. Complete examples are under [`exams/copy_paste_kit/examples/`](exams/copy_paste_kit/examples/).
 
 The former Khalil Ahmad retake is now Practical Exam 3 in [`exams/practical/exam-03-potentiometer-matrix-retake/`](exams/practical/exam-03-potentiometer-matrix-retake/). Its solution uses a class-based application, LED-matrix diagnostics, a shift-register driver, and preserved sample potentiometer data.
 

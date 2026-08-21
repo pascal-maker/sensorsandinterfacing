@@ -54,4 +54,4 @@ If you need to recreate this quickly in an exam, copy these pieces first:
 4. `SevenSegmentDisplay`
 5. `ButtonToggle`
 6. `CSVLogger`
-7. the main loop from `exams/copy-paste-kit/examples/bcd_7seg_auto_off_logger.py`
+7. the main loop from `exams/copy_paste_kit/examples/bcd_7seg_auto_off_logger.py`

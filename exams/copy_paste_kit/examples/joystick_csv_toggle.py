@@ -5,10 +5,10 @@ os.environ.setdefault("RPI_LGPIO_CHIP", "0")
 
 import RPi.GPIO as GPIO
 
-from adc_reader import ADCReader
-from button_toggle import ButtonToggle
-from csv_logger import CSVLogger
-from joystick import Joystick
+from exams.copy_paste_kit.adc_reader import ADCReader
+from exams.copy_paste_kit.button_toggle import ButtonToggle
+from exams.copy_paste_kit.csv_logger import CSVLogger
+from exams.copy_paste_kit.joystick import Joystick
 
 
 def main():

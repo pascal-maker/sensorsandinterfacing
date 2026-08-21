@@ -1,7 +1,7 @@
 # Exam Copy Paste Kit
 
 This folder is a small parts bin for Raspberry Pi sensor/display exam questions.
-Copy the class files you need, then copy one matching example from `examples/`.
+Import the helper classes you need, then adapt one matching example from `examples/`.
 
 ## Usual wiring from your previous work
 
@@ -45,3 +45,16 @@ disable SPI or move the button pin in the code.
 3. Make output object: `SevenSegmentDisplay`, `LedBarGraph`, or `LedMatrix8x8`.
 4. Make `CSVLogger` if logging is required.
 5. Use `try/except KeyboardInterrupt/finally` and call `cleanup()`.
+
+## Run an example
+
+Run examples from the repository root so Python can resolve the package imports:
+
+```bash
+python3 -m exams.copy_paste_kit.examples.pot_csv
+python3 -m exams.copy_paste_kit.examples.joystick_csv_toggle
+```
+
+The former `exam_simulation` folders were removed because they duplicated these
+examples and copied the same helper modules multiple times. There is now one
+maintained implementation of each helper.
