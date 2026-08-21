@@ -1,133 +1,79 @@
 # Sensors and Interfacing
 
-Course lab work and assignments for a sensors & interfacing module on the Raspberry Pi.  
-Each week introduces a new component, protocol, or concept through hands-on exercises, building toward a final multi-mode sensor station.
+Raspberry Pi coursework, hardware experiments, assignments, and exam-preparation material for a Sensors and Interfacing module.
 
----
+## Start here
 
-## Hardware Used
+- Browse the weekly labs in [`weeks/`](weeks/).
+- Open the graded and larger applications in [`projects/`](projects/).
+- Use the practical exams, retake material, and reusable snippets in [`exams/`](exams/).
+- Read exam notes in [`docs/exams/`](docs/exams/).
 
-| Component | Details |
-|-----------|---------|
-| Raspberry Pi | Primary platform (BCM pin numbering) |
-| MPU-6050 | 6-axis accelerometer + gyroscope — I2C @ 0x68 |
-| ADS7830 | 8-channel 8-bit ADC — I2C @ 0x48 |
-| I2C LCD (16×2) | Character display — I2C @ 0x27 |
-| Joystick | Analog joystick (used in assignment) |
-| Servo motor | Signal on GPIO 18 |
-| DC motor | H-bridge on GPIO 14 & 15 |
-| Stepper motor | 4-coil on GPIO 19, 13, 6, 5 |
-| RGB LED | GPIO 5 (R), 6 (G), 13 (B) |
-| Active buzzer | Week 8 |
-| Shift register | Week 8 |
-| Buttons & LEDs | Various GPIO pins throughout |
+Most programs access Raspberry Pi GPIO or I2C hardware directly. Run them on a configured Raspberry Pi unless a project README says that simulation is supported.
 
----
+## Repository layout
 
-## Repository Structure
-
-```
-sensorsandinterfacing/
-│
-├── main.py              # Multi-mode sensor station (combines all weeks)
-├── mpu6050.py           # Standalone MPU-6050 driver
-├── temperature.py       # Temperature sensor module
-├── test.py              # Quick test scripts
-├── assignment2.py       # Standalone assignment 2
-├── assignment3.py       # Standalone assignment 3
-│
-├── assignment/          # Graded assignment — multi-screen LCD app
-│   ├── screen1.py       # Screen 1 of 5
-│   ├── screen2.py
-│   ├── screen3.py
-│   ├── screen4.py
-│   ├── screen5.py
-│   ├── joystickofficial.py
-│   └── lcdtest.py
-│
-├── week1/               # GPIO basics — LEDs, buttons, traffic light
-├── week2/               # Button timing, debounce, pedestrian light, data logging
-├── week3/               # Bit operations, ADC, BCD encoding
-├── week4/               # PWM, ADS7830 ADC, I2C
-├── week5/               # I2C scanning, SPI, servo motor, serial communication
-├── week6/               # MPU-6050 accelerometer/gyroscope
-├── week07/              # DC motor, stepper motor, servo, BLE Bluetooth
-└── week08/              # Shift register, active buzzer
+```text
+.
+├── weeks/                         Weekly labs, consistently numbered
+│   ├── week01/                    GPIO basics
+│   ├── week02/                    Buttons, edge detection, logging
+│   ├── week03/                    BCD and bit manipulation
+│   ├── week04/                    ADC, PWM, and joystick input
+│   ├── week05/                    Communication and servo control
+│   ├── week06/                    MPU-6050 exercises
+│   ├── week07/                    Motors and Bluetooth LE
+│   ├── week08/                    Shift registers and buzzer project
+│   ├── week09/                    Displays, keypad, and LED matrix
+│   └── week11/                    RFID and camera exercises
+├── projects/
+│   ├── course-assignment/         Multi-screen LCD assignment
+│   └── data-visualization/        Dockerized hardware dashboard
+├── exams/
+│   ├── practice/                  Practical exam exercises
+│   ├── sandi-retake/              Khalil Ahmad retake files
+│   ├── copy-paste-kit/            Reusable exam components/examples
+│   └── bcd-7segment-auto-off-logger/
+├── docs/exams/                    Exam Q&A and retake notes
+├── main.py                        Legacy combined hardware demo
+├── mpu6050.py                     Standalone MPU-6050 driver
+└── temperature.py                 Standalone temperature example
 ```
 
----
+Week 10 is not present in the current course material.
 
-## Weekly Labs
+## Exam resources
 
-| Week | Topic | Key Files |
-|------|-------|-----------|
-| 1 | GPIO basics — LEDs, buttons, traffic light | `gpio_basics.py`, `multibutton.py` |
-| 2 | Button timing, debounce, pedestrian signals, CSV logging | `btn_timings.py`, `plotting.py`, `traflightpedestrian.py` |
-| 3 | Bit operations, ADC, BCD encoding | `bit_operations.py`, `bounce.py` |
-| 4 | PWM, ADS7830 ADC over I2C | `pwm_adc.py`, `exercisevolt.py` |
-| 5 | I2C scanning, SPI, servo motor, serial comms | `scani2c_exercise.py`, `servomotor.py`, `communication.py` |
-| 6 | MPU-6050 — 6-axis IMU readings | `mpu6050.py`, `assignment1.py` |
-| 7 | DC motor, stepper motor, servo, BLE Bluetooth | `motors.py`, `steppermotor.py`, `ble_rpi/` |
-| 8 | Shift register (74HC595), active buzzer | `shiftregisterexercise.py`, `active_buzzer.py` |
+The [`exams/copy-paste-kit/README.md`](exams/copy-paste-kit/README.md) explains the small reusable modules for ADC input, buttons, CSV logging, joysticks, LED matrices, shift registers, and seven-segment displays. Complete examples are under [`exams/copy-paste-kit/examples/`](exams/copy-paste-kit/examples/).
 
----
+The retake supplied from the upstream repository is in [`exams/sandi-retake/`](exams/sandi-retake/), including `KhalilAhmadRetake.py`, LED-matrix and shift-register helpers, and sample potentiometer data.
 
-## Main Application — `main.py`
+## Projects
 
-A multi-mode sensor station that ties all weeks together. Cycle through modes using the **MODE button (GPIO 20)**.
+Each larger project keeps its own instructions:
 
-| Mode | LED Color | Behaviour |
-|------|-----------|-----------|
-| **0 — IMU** | Blue | MPU-6050 accel-X maps to servo angle; prints accel/gyro/temp every 0.5 s |
-| **1 — Motor** | Green | ADS7830 potentiometer (ch2) controls DC motor speed; ACTION button (GPIO 26) cycles Stop → Forward → Reverse |
-| **2 — BCD** | Red | 4 buttons read as a 4-bit BCD value; ACTION button blinks the LED that many times |
+- [`projects/data-visualization/README.md`](projects/data-visualization/README.md)
+- [`weeks/week08/projectone/README.md`](weeks/week08/projectone/README.md)
 
-### Wiring summary
+The course assignment is in [`projects/course-assignment/`](projects/course-assignment/). Its scripts are designed to be run from that directory because several imports are local to the project.
 
-```
-GPIO 20  → MODE button
-GPIO 26  → ACTION button
-GPIO 16, 21, 19, 13 → BCD buttons (b0–b3)
-GPIO  5,  6, 13 → RGB LED (R, G, B)
-GPIO 17  → single LED
-GPIO 18  → servo signal
-GPIO 14, 15 → DC motor (H-bridge)
-I2C     → MPU-6050 @ 0x68
-I2C     → ADS7830  @ 0x48
-```
+## Basic setup
 
-### Run
+Enable the interfaces required by the exercise through `raspi-config`, then install the dependencies used by that exercise. Common dependencies include:
 
 ```bash
-python main.py
+python -m pip install smbus2 RPi.GPIO
 ```
 
----
+Some folders need additional packages such as OpenCV, Gradio, Matplotlib, or Bluetooth libraries. Check the nearest README or imports before running a script.
 
-## Assignment — Multi-Screen LCD App
+## Notes
 
-A 5-screen interactive application displayed on a 16×2 I2C LCD, navigated with an analog joystick.
-
-```bash
-cd assignment
-python screen1.py   # start from screen 1
-```
-
----
-
-## Setup
-
-```bash
-# Enable I2C on the Pi
-sudo raspi-config
-# → Interface Options → I2C → Enable
-
-# Install dependencies
-pip install smbus2 RPi.GPIO
-```
-
----
+- GPIO pin assignments vary by exercise. Review the constants near the top of a script before connecting hardware.
+- Data files and captured media are retained when they support an exercise.
+- Generated Python caches, editor metadata, operating-system metadata, and temporary office lock files are ignored.
+- `main.py` is a legacy combined demo. Its `BCDReader` dependency is not present in the current repository, so the weekly and project entry points are the reliable starting points.
 
 ## Author
 
-**pascal-maker** — Raspberry Pi · Python · Embedded Systems
+**pascal-maker** — Raspberry Pi, Python, and embedded systems coursework.
