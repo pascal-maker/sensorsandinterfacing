@@ -50,12 +50,12 @@ GPIO 20 is used for the button because GPIO 17 is already used as the shift-regi
 
 ## Expected Output Files
 
-The program writes output files inside `praticalexam2/data/`.
+The program writes output files inside `exams/practical/exam-02-potentiometer-matrix-logger/data/`.
 
 | File | Purpose |
 |---|---|
-| `potentiometer_log.csv` | Timestamped raw potentiometer readings |
-| `potentiometer_timing.png` | Graph of potentiometer readings over time |
+| `potentiometer-log.csv` | Timestamped raw potentiometer readings |
+| `potentiometer-timing.png` | Graph of potentiometer readings over time |
 
 ## Program Structure
 

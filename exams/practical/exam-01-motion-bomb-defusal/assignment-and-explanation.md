@@ -1,6 +1,6 @@
-# practicalexam1.py Script Explanation
+# Practical Exam 1: Motion-Sensitive Bomb Defusal
 
-`practicalexam1.py` is a Raspberry Pi bomb-defusal simulator. It uses buttons, an I2C LCD, an RGB LED, a buzzer, and an MPU6050 motion sensor to create an interactive game.
+`solution.py` is a Raspberry Pi bomb-defusal simulator. It uses buttons, an I2C LCD, an RGB LED, a buzzer, and an MPU6050 motion sensor to create an interactive game.
 
 ## Hardware Used
 

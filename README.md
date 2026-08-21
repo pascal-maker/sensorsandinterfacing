@@ -7,7 +7,7 @@ Raspberry Pi coursework, hardware experiments, assignments, and exam-preparation
 - Browse the weekly labs in [`weeks/`](weeks/).
 - Open the graded and larger applications in [`projects/`](projects/).
 - Use the practical exams, retake material, and reusable snippets in [`exams/`](exams/).
-- Read exam notes in [`docs/exams/`](docs/exams/).
+- Read theory-exam notes in [`exams/theory/`](exams/theory/).
 
 Most programs access Raspberry Pi GPIO or I2C hardware directly. Run them on a configured Raspberry Pi unless a project README says that simulation is supported.
 
@@ -30,11 +30,10 @@ Most programs access Raspberry Pi GPIO or I2C hardware directly. Run them on a c
 │   ├── course-assignment/         Multi-screen LCD assignment
 │   └── data-visualization/        Dockerized hardware dashboard
 ├── exams/
-│   ├── practice/                  Practical exam exercises
-│   ├── sandi-retake/              Khalil Ahmad retake files
+│   ├── practical/                 Three descriptively named practical exams
+│   ├── theory/                    Study guides and question banks
 │   ├── copy-paste-kit/            Reusable exam components/examples
 │   └── bcd-7segment-auto-off-logger/
-├── docs/exams/                    Exam Q&A and retake notes
 ├── main.py                        Legacy combined hardware demo
 ├── mpu6050.py                     Standalone MPU-6050 driver
 └── temperature.py                 Standalone temperature example
@@ -46,7 +45,7 @@ Week 10 is not present in the current course material.
 
 The [`exams/copy-paste-kit/README.md`](exams/copy-paste-kit/README.md) explains the small reusable modules for ADC input, buttons, CSV logging, joysticks, LED matrices, shift registers, and seven-segment displays. Complete examples are under [`exams/copy-paste-kit/examples/`](exams/copy-paste-kit/examples/).
 
-The retake supplied from the upstream repository is in [`exams/sandi-retake/`](exams/sandi-retake/), including `KhalilAhmadRetake.py`, LED-matrix and shift-register helpers, and sample potentiometer data.
+The former Khalil Ahmad retake is now Practical Exam 3 in [`exams/practical/exam-03-potentiometer-matrix-retake/`](exams/practical/exam-03-potentiometer-matrix-retake/). Its solution uses a class-based application, LED-matrix diagnostics, a shift-register driver, and preserved sample potentiometer data.
 
 ## Projects
 

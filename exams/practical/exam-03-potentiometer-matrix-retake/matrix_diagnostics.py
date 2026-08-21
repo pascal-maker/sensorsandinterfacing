@@ -1,4 +1,4 @@
-from ShiftRegister import ShiftRegister
+from shift_register import ShiftRegister
 from RPi import GPIO
 from time import sleep
 

@@ -36,9 +36,9 @@ ROW_DELAY = 0.002 # delay for LED matrix row scanning
 
 # Data Files
 BASE_DIR = os.path.dirname(os.path.abspath(__file__)) # folder of this script
-DATA_DIR = os.path.join(BASE_DIR, "data") # data folder inside praticalexam2
-CSV_PATH = os.path.join(DATA_DIR, "potentiometer_log.csv") # csv output path
-PLOT_PATH = os.path.join(DATA_DIR, "potentiometer_timing.png") # graph output path
+DATA_DIR = os.path.join(BASE_DIR, "data") # data folder for practical exam 2
+CSV_PATH = os.path.join(DATA_DIR, "potentiometer-log.csv") # csv output path
+PLOT_PATH = os.path.join(DATA_DIR, "potentiometer-timing.png") # graph output path
 
 # I2C Bus
 i2c = smbus.SMBus(1) # initialize I2C bus 1
