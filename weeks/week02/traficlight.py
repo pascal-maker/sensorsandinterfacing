@@ -1,46 +1,53 @@
-from RPi import GPIO
+"""Run a repeating three-LED traffic-light sequence."""
+
 import time
 
-GPIO.setmode(GPIO.BCM)#set the GPIO mode
+from RPi import GPIO
 
-green = 9#define the led pins
-yellow = 10#
 
-red = 11#define the led pins
+# BCM GPIO pin numbers for the traffic-light LEDs.
+GREEN = 9
+YELLOW = 10
+RED = 11
+LEDS = [GREEN, YELLOW, RED]
 
-GPIO.setup(green,GPIO.OUT)#set the leds as outputs 
-GPIO.setup(yellow,GPIO.OUT)#set the leds as outputs
-GPIO.setup(red,GPIO.OUT)#set the leds as outputs
-#why all off works is becase it sets all the pins to low/off regadless of what they were before so even if one was high it is turned off no matter what no
 
-def all_off():#function to turn off all the lights
-    GPIO.output(green,GPIO.LOW)#turns off the green light
-    GPIO.output(yellow,GPIO.LOW)#turns off the yellow light
-    GPIO.output(red,GPIO.LOW)#turns off the red light
-#all off turns the lights off regadless of what they were before this is becuase it sets them to low/off no matter what    
+# Use BCM GPIO numbering rather than physical header-pin numbering.
+GPIO.setmode(GPIO.BCM)
+
+# Configure every LED pin as an output and make sure it starts off.
+for led in LEDS:
+    GPIO.setup(led, GPIO.OUT, initial=GPIO.LOW)
+
+
+def all_off():
+    """Turn off every traffic-light LED."""
+    for led in LEDS:
+        GPIO.output(led, GPIO.LOW)
+
+
+def show_light(led, name, duration):
+    """Turn on one traffic light for a specified number of seconds."""
+    # Clear the previous light before switching on the next one.
+    all_off()
+    GPIO.output(led, GPIO.HIGH)
+    print(f"{name} light is ON for {duration} second(s)")
+    time.sleep(duration)
 
 
 try:
+    print("Traffic light started. Press Ctrl+C to stop.")
+
     while True:
-        all_off()#turns off all the lights
-        GPIO.output(green,GPIO.HIGH)#turns on the green light
-        print("Green")
-        time.sleep(5)#waits for 5 seconds
-        
-        
-        all_off()
-        GPIO.output(yellow,GPIO.HIGH)#turns on the yellow light
-        print("Yellow")
-        time.sleep(1)#waits for 1 second
-        
-        
-        all_off()
-        GPIO.output(red,GPIO.HIGH)#turns on the red light
-        print("Red")
-        time.sleep(4)#waits for 4 seconds
-    
+        show_light(GREEN, "Green", 5)
+        show_light(YELLOW, "Yellow", 1)
+        show_light(RED, "Red", 4)
+
 except KeyboardInterrupt:
-    print("Program Stoppped")#prints stopped message when keyboard interrupt is received
-    
+    print("\nCtrl+C received. Traffic light stopped.")
+
 finally:
-    GPIO.cleanup()    #releases the GPIO pins
+    # Leave the circuit in a safe state even if an error interrupts the loop.
+    all_off()
+    GPIO.cleanup()
+    print("All LEDs are off. GPIO cleanup complete.")

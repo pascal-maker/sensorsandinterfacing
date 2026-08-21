@@ -15,7 +15,8 @@ import gradio as gr
 # config
 # --------
 BUTTON_PIN = 20#setting the pin number
-DATA_DIR = "data"#setting the directory for the data
+BASE_DIR = os.path.dirname(os.path.abspath(__file__))#folder containing this script
+DATA_DIR = os.path.join(BASE_DIR, "data")#always use Week 2's data folder
 CSV_FILE = os.path.join(DATA_DIR, "btn_timings.csv")#setting the csv file path
 
 GPIO.setmode(GPIO.BCM)#setting the mode to bcm
@@ -33,9 +34,14 @@ def button_event(channel):# declares the button event function
     global press_time# declares the function is modifying the outer press_time variable not creating a local one
     state = GPIO.input(channel)# checks the state of the button
     now = time.time()# saves current time
-    if state == 1:  # pin HIGH = released (pull-up resistor keeps it HIGH when not pressed)
+
+    # The pull-up makes the button active-LOW:
+    # LOW means pressed, so start the timer on the falling edge.
+    if state == GPIO.LOW:
         press_time = now
-    else:  # pin LOW = pressed
+
+    # HIGH means released, so stop the timer on the rising edge.
+    elif state == GPIO.HIGH:
         if press_time is not None:# if the button was previously pressed
             duration = now - press_time# calculate the duration of the button press
             timestamp = datetime.now()# save the current time
@@ -123,10 +129,12 @@ try:
 except KeyboardInterrupt:# if keyboard interrupt is received
     print("\nExiting...")# prints exit message
 finally:# append this session to CSV
-    file_exists = os.path.isfile(CSV_FILE)#checks if the csv file exists
+    file_needs_header = (
+        not os.path.isfile(CSV_FILE) or os.path.getsize(CSV_FILE) == 0
+    )#new or empty files need one header row
     with open(CSV_FILE, "a", newline="") as file:#opens the csv file in append mode
         writer = csv.writer(file)# creates a csv writer object
-        if not file_exists:#checks if the csv file exists
+        if file_needs_header:#do not add another header to an existing file
             writer.writerow(["Timestamp", "Duration (s)"])#writes the header row
         for ts, duration in records:#iterates through the records list
             writer.writerow([ts.strftime("%Y-%m-%d %H:%M:%S"), round(duration, 3)])#formats the timestamp and rounds the duration
