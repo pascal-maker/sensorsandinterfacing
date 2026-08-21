@@ -30,10 +30,9 @@ Most programs access Raspberry Pi GPIO or I2C hardware directly. Run them on a c
 │   ├── course-assignment/         Multi-screen LCD assignment
 │   └── data-visualization/        Dockerized hardware dashboard
 ├── exams/
-│   ├── practical/                 Three descriptively named practical exams
+│   ├── practical/                 Four descriptively named practical exams
 │   ├── theory/                    Study guides and question banks
-│   ├── copy_paste_kit/            Reusable exam components/examples
-│   └── bcd-7segment-auto-off-logger/
+│   └── copy_paste_kit/            Reusable exam components/examples
 ├── main.py                        Legacy combined hardware demo
 ├── mpu6050.py                     Standalone MPU-6050 driver
 └── temperature.py                 Standalone temperature example

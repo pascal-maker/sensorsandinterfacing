@@ -32,5 +32,5 @@ joystick_log.csv
 - Joystick Y channel: `5`
 - Joystick button pin: GPIO `7`
 
-If GPIO `7` does not work on Raspberry Pi 5, change `pin=7` in `main.py` to
+If GPIO `7` does not work on Raspberry Pi 5, change `pin=7` in `joystick_csv_toggle.py` to
 `pin=20` and use the separate button.

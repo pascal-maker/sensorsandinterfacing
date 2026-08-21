@@ -35,7 +35,7 @@ CSV.
 
 ## Clean version
 
-Use `main.py` for the full refactored solution. It separates the assignment into
+Use `solution.py` for the full self-contained refactored solution. It separates the assignment into
 small classes:
 
 - `BcdInput`: reads the four BCD bits and combines them into one value.
@@ -55,3 +55,7 @@ If you need to recreate this quickly in an exam, copy these pieces first:
 5. `ButtonToggle`
 6. `CSVLogger`
 7. the main loop from `exams/copy_paste_kit/examples/bcd_7seg_auto_off_logger.py`
+
+The copy-paste-kit example is the short reusable composition. `solution.py` is
+the standalone exam submission and keeps its own typed configuration and domain
+classes so it can be studied or submitted without depending on the kit package.
