@@ -1,47 +1,66 @@
 from RPi import GPIO
 import time
 
+
+# The order of this list is important. The first pin is bit 0 (value 1),
+# followed by bit 1 (value 2), bit 2 (value 4), and bit 3 (value 8).
+BCD_PINS = [16, 20, 21, 26]
+
+# Wait 0.1 seconds between measurements so the console remains readable.
+POLL_INTERVAL = 0.1
+
+# Use Broadcom (BCM) GPIO pin numbers, matching the numbers above.
 GPIO.setmode(GPIO.BCM)
 
-# The 4 GPIO pins connected to BCD counter outputs (LSB to MSB order: bit0..bit3)
-pins = [16, 20, 21, 26]
-
-# Configure each pin as input with an internal pull-up resistor.
-# Pull-up means the pin reads HIGH (1) by default; the counter pulls it LOW (0)
-# to assert a '1' bit, so we invert every reading below.
-for pin in pins:
-    GPIO.setup(pin, GPIO.IN, GPIO.PUD_UP)
-
-# Track the previous decoded value so we only print on change (EXTRA requirement)
-last_value = None#guarantee that the first reading always prints, regardless of what the counter shows.
+# Configure all four BCD pins as inputs with their internal pull-ups enabled.
+# A pull-up makes an undriven input read HIGH instead of floating randomly.
+for pin in BCD_PINS:
+    GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
 try:
+    # Poll the BCD counter continuously until the user presses Ctrl+C.
     while True:
-        value = 0  # Will accumulate the 4-bit nibble start the niblle as all zeros: 0000 each loop resets the nibble before oring in the 4 bits
+        # Start with an empty four-bit value: 0000.
+        nibble = 0
 
-        # Read and invert each pin, then shift it into the correct bit position
-        for i, pin in enumerate(pins):# gives you both the index and the value from the list at the same time. i=0, pin =16 etc you need i to know which bit postion to shift into and pin to actually read the gpio.
-            raw = GPIO.input(pin)   # 0 or 1 straight from the pin reads the pyschical voltage on the pn - returns either 0 low or 1 high
+        # enumerate() supplies both the bit position (0-3) and GPIO pin.
+        for bit_position, pin in enumerate(BCD_PINS):
+            # GPIO.input() returns GPIO.LOW (0) or GPIO.HIGH (1).
+            raw_bit = GPIO.input(pin)
 
-            # Invert: pull-up makes active-low logic, so a LOW pin means bit = 1
-            bit = 1 - raw# pins are set to pull up, so they read as 1 unless the counter is pulling them low, so this inverts the reading to get the correct bit value low should be 1 here the logic is flipped: 0 pin stays high 1 pin goes low counter says bit = 1  →  pin goes LOW  →  raw = 0  →  1 - 0 = 1  ✓
-  #Counter says bit = 0  →  pin stays HIGH → raw = 1  →  1 - 1 = 0  
+            # XOR with 1 inverts one bit: 0 becomes 1 and 1 becomes 0.
+            # The assignment requires inversion because the inputs are active-low.
+            inverted_bit = raw_bit ^ 1
 
-            print(f"Bit {i} = {bit}", end="  ")  # Print each bit individually prints each bit on the same line as t's read . end =" "replaces the default new line with spaces so all 4 bits appear side by side 
+            # Display each input separately to help verify the circuit.
+            print(
+                f"Bit {bit_position} (GPIO {pin}): "
+                f"raw={raw_bit}, inverted={inverted_bit}"
+            )
 
-            # Shift the bit into position i and OR it into the nibble.
-            # i=0 → bit0 (units), i=1 → bit1 (twos), i=2 → bit2 (fours), i=3 → bit3 (eights)
-            value |= bit << i# shifts each bit into position i and merges into a value. after all 4 iterations the niblle is fully built
+            # Move the bit to its binary position with <<, then combine it
+            # with the existing nibble using bitwise OR (|).
+            # Example for bit 2: 1 << 2 gives 0100.
+            nibble |= inverted_bit << bit_position
 
-        print(f"\n-> Combined nibble = {value:04b}  (decimal: {value})")# prints the final result once all 4 bits are combined
-        
+        # :04b formats the number as exactly four binary digits.
+        print(f"BCD nibble: {nibble:04b}")
 
-        # EXTRA: only report to console when the decoded value actually changes
-        if value != last_value:#the extra requirement only reports to the console when the decoded value actually changes announces the new value to the console, Only fires on a change so you dont get flooded  with repeated identical lines.
-            print(f"*** Value changed: {value} ***")#prints the new value
-            last_value = value# updates the tracker so next iteration it compares against the value you just read, not an older one.
+        # One BCD nibble can represent only decimal digits 0 through 9.
+        # Binary values 1010 through 1111 are not valid BCD digits.
+        if nibble <= 9:
+            print(f"Decimal value: {nibble}")
+        else:
+            print(f"Invalid BCD value: {nibble}")
 
-        time.sleep(0.1)  # Short poll interval keeps the reading responsive
+        # Print a blank line between measurements and pause before polling again.
+        print()
+        time.sleep(POLL_INTERVAL)
 
 except KeyboardInterrupt:
+    # Ctrl+C stops the infinite loop without displaying an error traceback.
+    print("\nProgram stopped.")
+
+finally:
+    # Always release the GPIO pins, even if an unexpected error occurs.
     GPIO.cleanup()
