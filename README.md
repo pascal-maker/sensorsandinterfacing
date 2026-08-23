@@ -11,6 +11,10 @@ Raspberry Pi coursework, hardware experiments, assignments, and exam-preparation
 
 Most programs access Raspberry Pi GPIO or I2C hardware directly. Run them on a configured Raspberry Pi unless a project README says that simulation is supported.
 
+Reusable LCD, ADC, button, servo, and shift-register drivers are documented in
+[`hardware/README.md`](hardware/README.md). Early weekly exercises may retain
+local implementations when writing the low-level driver is part of the lesson.
+
 ## Repository layout
 
 ```text
@@ -33,6 +37,7 @@ Most programs access Raspberry Pi GPIO or I2C hardware directly. Run them on a c
 │   ├── practical/                 Four descriptively named practical exams
 │   ├── theory/                    Study guides and question banks
 │   └── copy_paste_kit/            Reusable exam components/examples
+├── hardware/                       Shared hardware device drivers
 ├── main.py                        Legacy combined hardware demo
 ├── mpu6050.py                     Standalone MPU-6050 driver
 └── temperature.py                 Standalone temperature example
