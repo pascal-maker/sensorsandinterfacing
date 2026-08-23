@@ -1,7 +1,7 @@
 # Shared hardware drivers
 
 This package contains the drivers that are genuinely reused across the course:
-`ADS7830`, `Button`, `LCD`, `ServoMotor`, and `ShiftRegister`.
+`ADS7830`, `Button`, `LCD`, `MPU6050`, `ServoMotor`, and `ShiftRegister`.
 
 Completed applications may import these classes instead of copying low-level
 GPIO and I2C code. Early weekly exercises intentionally keep standalone
