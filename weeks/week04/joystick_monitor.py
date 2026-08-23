@@ -36,4 +36,8 @@ with gr.Blocks() as demo:#create the gradio interface
     timer = gr.Timer(value=0.5)#set the timer
     timer.tick(fn=update_bars, outputs=text_display)#call the update_bars function every 0.5 seconds
 
-demo.launch()
+try:
+    demo.launch()
+finally:
+    # Release the I2C bus when the Gradio application stops or raises an error.
+    i2c.close()

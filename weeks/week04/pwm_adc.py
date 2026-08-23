@@ -8,6 +8,11 @@ import smbus#import smbus library
 import time#import time library
 
 
+# The common-anode RGB LED is completely off at 100% duty cycle. Limiting the
+# duty cycle to 95% keeps it faintly illuminated, as required by the assignment.
+MAX_DUTY = 95
+
+
 class PWMLed:
     """Single LED controlled via PWM (0–100 % brightness)."""
 
@@ -29,7 +34,7 @@ class ADS7830:
     """
     Driver for the ADS7830 8-channel, 8-bit ADC over I2C.
     Default I2C address: 0x48.
-    VREF: 5.0 V.
+    VREF: 3.3 V.
     """
 
     _CHANNEL_COMMANDS = {
@@ -39,7 +44,7 @@ class ADS7830:
         6: 0xB4, 7: 0xF4,#the commands for the ADC chip to read the voltage from the pots
     }
 
-    def __init__(self, address=0x48, bus_num=1, vref=5.0):#initialize the ADC
+    def __init__(self, address=0x48, bus_num=1, vref=3.3):#initialize the ADC
         self.address = address#set the i2c address
         self.vref = vref#set the reference voltage
         self._bus = smbus.SMBus(bus_num)#set the i2c bus
@@ -50,7 +55,8 @@ class ADS7830:
             raise ValueError(f"Invalid channel {channel}. Choose 0–7.")#raise an error if the channel is invalid
         cmd = self._CHANNEL_COMMANDS[channel]#set the command for the ADC chip to read the voltage from the pot
         self._bus.write_byte(self.address, cmd)#write the command to the ADC
-        return self._bus.read_byte(self.address)#read the adc value return the value in 0-255 range
+        self._bus.read_byte(self.address)#discard the result from the previous conversion
+        return self._bus.read_byte(self.address)#read the current adc value in the 0-255 range
 
     def read_voltage(self, channel):#function to read the voltage from the ADC
         """Return voltage in volts for the given channel."""
@@ -72,23 +78,23 @@ class RGBLed:
         self._r = GPIO.PWM(pin_r, frequency)#create the PWM instance for the red led
         self._g = GPIO.PWM(pin_g, frequency)#create the PWM instance for the green led
         self._b = GPIO.PWM(pin_b, frequency)#create the PWM instance for the blue led
-        self._r.start(100)#start the red led
-        self._g.start(100)#start the green led
-        self._b.start(100)#start the blue led
+        self._r.start(MAX_DUTY)#start the red led with a faint glow
+        self._g.start(MAX_DUTY)#start the green led with a faint glow
+        self._b.start(MAX_DUTY)#start the blue led with a faint glow
 
     def set_color(self, r, g, b):#sets the color of the LED
         """
         Set color using 0–255 values per channel.
         Inverts to duty cycle for common-anode wiring.
         """
-        self._r.ChangeDutyCycle(100 - r * 100 / 255)#change the duty cycle of the red led
-        self._g.ChangeDutyCycle(100 - g * 100 / 255)#change the duty cycle of the green led
-        self._b.ChangeDutyCycle(100 - b * 100 / 255)#change the duty cycle of the blue led
+        self._r.ChangeDutyCycle(min(100 - r * 100 / 255, MAX_DUTY))#change the duty cycle of the red led
+        self._g.ChangeDutyCycle(min(100 - g * 100 / 255, MAX_DUTY))#change the duty cycle of the green led
+        self._b.ChangeDutyCycle(min(100 - b * 100 / 255, MAX_DUTY))#change the duty cycle of the blue led
 
-    def off(self):#turns the LED off
-        self._r.ChangeDutyCycle(100)#turns the red led off
-        self._g.ChangeDutyCycle(100)#turns the green led off
-        self._b.ChangeDutyCycle(100)#turns the blue led off
+    def off(self):#puts the LED in its faint-glow system-off state
+        self._r.ChangeDutyCycle(MAX_DUTY)#keep the red led faintly lit
+        self._g.ChangeDutyCycle(MAX_DUTY)#keep the green led faintly lit
+        self._b.ChangeDutyCycle(MAX_DUTY)#keep the blue led faintly lit
 
     def stop(self):#stops the PWM
         self._r.stop()
