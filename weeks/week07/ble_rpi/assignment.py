@@ -179,6 +179,8 @@ except KeyboardInterrupt:
     time.sleep(0.5)  # fixed: was sleep(0.5) — time not imported as sleep
 
 finally:
+    # Stop BLE on every exit path, not only after Ctrl+C.
+    stop_ble_gatt_uart_loop()
     stop_stepper()#stopping the stepper motor
     dc_stop()#stopping the dc motor
     dc_pwm1.stop()#stopping the dc pwm signal for the first motor pin

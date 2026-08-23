@@ -1,10 +1,16 @@
 import time 
 import queue
 import threading
+from pathlib import Path
+import sys
 import RPi.GPIO as GPIO
 
 # import the BLE UART loop from your BLE files
-# change this import only if your folder structure is different
+# Add the Raspberry Pi BLE folder so its helper package can be imported when
+# this legacy copy is run directly.
+BLE_RPI_DIR = Path(__file__).resolve().parents[1] / "ble_rpi"
+if str(BLE_RPI_DIR) not in sys.path:
+    sys.path.insert(0, str(BLE_RPI_DIR))
 from ble.bluetooth_uart_server import ble_gatt_uart_loop, stop_ble_gatt_uart_loop
 # ----------------------
 # Variables
@@ -54,8 +60,8 @@ GPIO.setup(STEPPER_PINS, GPIO.OUT)
 servo_pin = 18
 GPIO.setup(servo_pin, GPIO.OUT)
 #PWM
-dc_pwm1 = GPIO.PWM(motor_pin1, 100)#creating the PWM signal for the first motor pin
-dc_pwm2 = GPIO.PWM(motor_pin2, 100)#creating the PWM signal for the second motor pin
+dc_pwm1 = GPIO.PWM(MOTOR_PINS[0], 1000)#creating the PWM signal for the first motor pin
+dc_pwm2 = GPIO.PWM(MOTOR_PINS[1], 1000)#creating the PWM signal for the second motor pin
 dc_pwm1.start(0)#starting the PWM signal for the first motor pin
 dc_pwm2.start(0)#starting the PWM signal for the second motor pin
 
@@ -179,7 +185,7 @@ try:
 except KeyboardInterrupt:
     print("Ctrl-C received, shutting down...")
     stop_ble_gatt_uart_loop()
-    sleep(0.5)
+    time.sleep(0.5)
 
 finally:
     stop_stepper()
