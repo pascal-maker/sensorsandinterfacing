@@ -8,6 +8,7 @@ except ImportError:#If the import fails, it will import the SMBus library from s
 
 class LCD:#Creates the LCD class
     # ---------- LCD constants ----------
+    I2C_ADDR = 0x27 #Default I2C address of the PCF8574 backpack
     LCD_WIDTH = 16 #The width of the LCD
 
     LCD_CHR = 0x01   # RS = 1 -> character/data
@@ -22,10 +23,11 @@ class LCD:#Creates the LCD class
     E_PULSE = 0.0002 #Pulse width of the enable pin
     E_DELAY = 0.0002 #Delay between the enable pin and the data pins
 
-    def __init__(self, i2c_addr=0x27, bus_id=1): #Initializes the LCD
+    def __init__(self, i2c_addr=I2C_ADDR, bus_id=1, backlight_on=True): #Initializes the LCD
         self.addr = i2c_addr #The I2C address of the LCD
         self.bus = SMBus(bus_id) #The bus ID of the LCD
-        self.lcd_init()
+        self.backlight = self.LCD_BACKLIGHT if backlight_on else 0
+        self.init_LCD()
 
     def write_byte(self, bits): #Writes a byte to the LCD
         self.bus.write_byte(self.addr, bits) #Writes the byte to the LCD
@@ -41,8 +43,8 @@ class LCD:#Creates the LCD class
 
     def set_data_bits(self, value, mode): #Sets the data bits of the LCD
         # split 8-bit value into 2 nibbles for 4-bit LCD mode
-        ms_nibble = (value & 0xF0) | mode | self.LCD_BACKLIGHT #splits the value into 2 nibbles
-        ls_nibble = ((value << 4) & 0xF0) | mode | self.LCD_BACKLIGHT #splits the value into 2 nibbles
+        ms_nibble = (value & 0xF0) | mode | self.backlight #splits the value into 2 nibbles
+        ls_nibble = ((value << 4) & 0xF0) | mode | self.backlight #splits the value into 2 nibbles
 
         self.send_byte_with_e_toggle(ms_nibble) #Sends the most significant nibble
         self.send_byte_with_e_toggle(ls_nibble) #Sends the least significant nibble
@@ -59,26 +61,28 @@ class LCD:#Creates the LCD class
             value = ord(value) #Converts the value to an ASCII value
         self.set_data_bits(value, self.LCD_CHR) #Sets the data bits for the character
 
-    def lcd_init(self): #Initializes the LCD
+    def init_LCD(self): #Initializes the LCD
         time.sleep(0.05)
 
         # force LCD into 4-bit mode
-        self.send_byte_with_e_toggle(0x30 | self.LCD_BACKLIGHT)#Forces the LCD into 4-bit mode
+        self.send_byte_with_e_toggle(0x30 | self.backlight)#Forces the LCD into 4-bit mode
         time.sleep(0.005)#Waits for 0.005 seconds
 
-        self.send_byte_with_e_toggle(0x30 | self.LCD_BACKLIGHT)#Forces the LCD into 4-bit mode
+        self.send_byte_with_e_toggle(0x30 | self.backlight)#Forces the LCD into 4-bit mode
         time.sleep(0.001)#Waits for 0.001 seconds
 
-        self.send_byte_with_e_toggle(0x30 | self.LCD_BACKLIGHT)#Forces the LCD into 4-bit mode
+        self.send_byte_with_e_toggle(0x30 | self.backlight)#Forces the LCD into 4-bit mode
         time.sleep(0.001)#Waits for 0.001 seconds
 
-        self.send_byte_with_e_toggle(0x20 | self.LCD_BACKLIGHT)#Sends the least significant nibble
+        self.send_byte_with_e_toggle(0x20 | self.backlight)#Sends the least significant nibble
 
-        # normal setup
+        # Required three-command setup sequence
         self.send_instruction(0x28)  # 4-bit, 2 lines, 5x8 font
-        self.send_instruction(0x0C)  # display on, cursor off, blink off
-        self.send_instruction(0x01)  # clear display
-        self.send_instruction(0x06)  # cursor moves right
+        self.send_instruction(0x0F)  # display, cursor and cursor blink on
+        self.send_instruction(0x01)  # clear display and return cursor home
+
+    # Keep the conventional lowercase name available as well.
+    lcd_init = init_LCD
 
     def clear(self): #Clears the LCD
         self.send_instruction(0x01) #Clears the LCD
@@ -93,6 +97,11 @@ class LCD:#Creates the LCD class
         if blink_on:
             cmd |= 0x01 #Sets the blink on
         self.send_instruction(cmd) #Sends the instruction to the LCD
+
+    def set_backlight(self, enabled=True):
+        """Turn the backpack backlight on or off."""
+        self.backlight = self.LCD_BACKLIGHT if enabled else 0
+        self.write_byte(self.backlight)
 
     def send_string(self, message, line): #Sends a string to the LCD
         self.send_instruction(line) #Sends the instruction to the LCD
@@ -110,6 +119,19 @@ class LCD:#Creates the LCD class
 
         self.send_string(line1, self.LCD_LINE_1) #Sends the first line of text to the LCD
         self.send_string(line2, self.LCD_LINE_2) #Sends the second line of text to the LCD
+
+    def scroll_text(self, text, delay=0.35):
+        """Scroll text longer than 32 characters through the two-line display."""
+        text = str(text)
+        if len(text) <= self.LCD_WIDTH * 2:
+            self.show_text(text)
+            return
+
+        padded = text + " " * self.LCD_WIDTH
+        last_start = len(padded) - (self.LCD_WIDTH * 2)
+        for start in range(last_start + 1):
+            self.show_text(padded[start:start + self.LCD_WIDTH * 2])
+            time.sleep(delay)
 
     def close(self): #Closes the LCD
         self.bus.close() #Closes the bus
@@ -135,7 +157,10 @@ def main():
 
             lcd.set_cursor_options(display_on=True, cursor_on=cursor_on, blink_on=blink_on) #Sets the cursor options
             lcd.clear() #Clears the LCD
-            lcd.show_text(text) #Shows the text on the LCD
+            if len(text) > lcd.LCD_WIDTH * 2:
+                lcd.scroll_text(text) #Scrolls messages longer than both LCD rows
+            else:
+                lcd.show_text(text) #Shows the text on the LCD
 
             print("Text sent to LCD.\n") #Prints the text sent to the LCD
 

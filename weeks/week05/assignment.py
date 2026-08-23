@@ -11,7 +11,7 @@ SERVO_PIN = 18#sets the servo pin
 BUTTON_PIN = 20#sets the button pin
 
 ADC_ADDR = 0x48#sets the ADC address
-ADC_COMMAND = 0x44#sets the ADC command
+ADC_COMMAND = 0xA4#selects potentiometer channel A4 on the ADS7830 ADC
 
 PWM_FREQUENCY = 50#sets the PWM frequency
 
