@@ -56,6 +56,8 @@ class Advertisement(dbus.service.Object):
         self.local_name = None
         self.include_tx_power = False
         self.data = None
+        self.min_interval = None
+        self.max_interval = None
         dbus.service.Object.__init__(self, bus, self.path)
 
     def get_properties(self):
@@ -81,6 +83,10 @@ class Advertisement(dbus.service.Object):
         if self.data is not None:
             properties['Data'] = dbus.Dictionary(
                 self.data, signature='yv')
+        if self.min_interval is not None:
+            properties['MinInterval'] = dbus.UInt32(self.min_interval)
+        if self.max_interval is not None:
+            properties['MaxInterval'] = dbus.UInt32(self.max_interval)
         return {LE_ADVERTISEMENT_IFACE: properties}
 
     def get_path(self):

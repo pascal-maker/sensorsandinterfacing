@@ -40,3 +40,22 @@ The complete Raspberry Pi BLE extension is:
 ```bash
 python weeks/week07/ble_rpi/assignment.py
 ```
+
+### Raspberry Pi kernel advertising workaround
+
+Some recent Raspberry Pi kernels reject every BlueZ D-Bus advertisement with
+`Invalid Parameters (0x0d)`, although GATT registration still works. On those
+systems, start a kernel-managed advertisement in a second terminal while the
+assignment is running:
+
+```bash
+sudo btmgmt --index 0 add-adv -c -g -n \
+  -u 6e400001-b5a3-f393-e0a9-e50e24dcca9e 1
+```
+
+The phone should find the Pi as `tdscpi` or by MAC address. When finished, stop
+the assignment with `Ctrl+C` and remove the manual advertisement:
+
+```bash
+sudo btmgmt --index 0 rm-adv 1
+```

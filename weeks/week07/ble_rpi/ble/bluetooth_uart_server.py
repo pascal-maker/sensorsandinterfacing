@@ -167,6 +167,11 @@ class UartAdvertisement(Advertisement):
         # The phone can identify this Pi by its MAC address, and the UART GATT
         # service is still discovered after the connection is established.
         self.include_tx_power = False
+        # Recent Raspberry Pi kernel/BlueZ combinations can pass zero intervals
+        # to the controller when these optional properties are absent. The
+        # controller rejects zero with HCI status 0x0d (Invalid Parameters).
+        self.min_interval = 100
+        self.max_interval = 100
 
 def find_adapter(bus):
     remote_om = dbus.Interface(bus.get_object(BLUEZ_SERVICE_NAME, '/'),
@@ -220,9 +225,9 @@ def ble_gatt_uart_loop(rx_q, tx_q, device_name='rpi-gatt-server', raw=False):
 
     def advertisement_failed(error):
         print("Failed to register advertisement: {}".format(error))
-        print("Check that no other BLE advertising program is already running.")
-        if mainloop.is_running():
-            mainloop.quit()
+        print("The GATT UART service is still running.")
+        print("This Raspberry Pi kernel has a known BlueZ D-Bus advertising bug.")
+        print("Use the btmgmt workaround shown in the Week 07 README.")
 
     def application_registered():
         print("GATT application registered")

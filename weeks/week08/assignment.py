@@ -178,8 +178,10 @@ try:#try block to catch errors
         # Read potentiometer
         analog_value = read_channel(A2_CHANNEL)#read ADC value
 
-        # Scale 0-255 -> 0-10
-        led_value = int((analog_value / 255) * 10)#scale ADC value to 0-10
+        # Scale the 256 possible ADC readings (0-255) into LED positions 1-10.
+        # Integer division creates ten nearly equal input ranges and adding 1
+        # ensures that even an ADC reading of zero still lights the first LED.
+        led_value = 1 + (analog_value * 10 // 256)#scale ADC value to 1-10
 
         # Show LEDs
         set_bar_graph(led_value, fill_mode)#set bar graph pattern
