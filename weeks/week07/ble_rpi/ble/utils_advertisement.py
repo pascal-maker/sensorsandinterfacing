@@ -152,7 +152,10 @@ def register_ad_cb():
 
 def register_ad_error_cb(error):
     print('Failed to register advertisement: ' + str(error))
-    mainloop.quit()
+    # This utility can also be imported by another BLE server. In that case its
+    # own example loop was never created, so there is nothing here to stop.
+    if mainloop is not None:
+        mainloop.quit()
 
 
 def find_adapter(bus):

@@ -63,7 +63,9 @@ tx_q = queue.Queue()#setting the tx queue for data from raspberry pi to phone
 
 threading.Thread(
     target=ble_gatt_uart_loop, #the thread that runs the ble gatt uart loop
-    args=(rx_q, tx_q, "pj-pi-gatt-uart"),#arguments for the thread
+    # Keep the advertised name short enough to fit beside the 128-bit UART UUID
+    # in BLE's 31-byte legacy advertising packet.
+    args=(rx_q, tx_q, "pj-pi"),#arguments for the thread
     daemon=True #daemon thread will exit when the main program exits automatically 
 ).start()#running the thread
 
@@ -175,8 +177,6 @@ try:#main loop
 
 except KeyboardInterrupt:
     print("Ctrl-C received, shutting down...")
-    stop_ble_gatt_uart_loop()#stopping the ble gatt uart loop
-    time.sleep(0.5)  # fixed: was sleep(0.5) — time not imported as sleep
 
 finally:
     # Stop BLE on every exit path, not only after Ctrl+C.
@@ -187,5 +187,9 @@ finally:
     dc_pwm2.stop()#stopping the dc pwm signal for the second motor pin
     servo_pwm.ChangeDutyCycle(0)#stopping the pwm signal for the servo pin
     servo_pwm.stop()#stopping the pwm signal for the servo pin
+
+    # The RPi.GPIO compatibility layer calls stop again when each PWM object is
+    # destroyed. Destroy them before GPIO.cleanup() so their pins still exist.
+    del dc_pwm1, dc_pwm2, servo_pwm
     time.sleep(0.5)#waiting for the delay
     GPIO.cleanup()#cleaning up the gpio pins

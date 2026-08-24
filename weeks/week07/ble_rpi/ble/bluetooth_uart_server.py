@@ -4,8 +4,8 @@ import dbus.service
 import dbus.mainloop.glib
 from gi.repository import GLib
 
-from ble.utils_advertisement import Advertisement, register_ad_cb, register_ad_error_cb
-from ble.utils_gatt_server import Service, Characteristic, register_app_cb, register_app_error_cb
+from ble.utils_advertisement import Advertisement
+from ble.utils_gatt_server import Service, Characteristic
 BLUEZ_SERVICE_NAME =           'org.bluez'
 DBUS_OM_IFACE =                'org.freedesktop.DBus.ObjectManager'
 LE_ADVERTISING_MANAGER_IFACE = 'org.bluez.LEAdvertisingManager1'
@@ -57,14 +57,11 @@ def stop_ble_gatt_uart_loop():
     """Request BLE shutdown from any thread."""
     if not _ble_context:
         return
-    GLib.idle_add(
-        shutdown_ble,
-        _ble_context.get("mainloop"),
-        _ble_context.get("service_manager"),
-        _ble_context.get("ad_manager"),
-        _ble_context.get("app"),
-        _ble_context.get("adv"),
-    )
+    loop = _ble_context.get("mainloop")
+    if loop is not None:
+        # Only stop the loop here. Its finally block owns de-registration, which
+        # prevents advertisements and GATT applications being removed twice.
+        GLib.idle_add(loop.quit)
 
 class TxCharacteristic(Characteristic):
     def __init__(self, bus, index, service, tx_q, raw):
@@ -164,9 +161,12 @@ class UartApplication(Application):
 class UartAdvertisement(Advertisement):
     def __init__(self, bus, index, device_name):
         Advertisement.__init__(self, bus, index, 'peripheral')
-        self.add_service_uuid(UART_SERVICE_UUID)
-        self.add_local_name(device_name)
-        self.include_tx_power = True
+        # Use a minimal connectable advertisement, matching the successful
+        # `btmgmt add-adv -c` controller test. This adapter rejects optional
+        # LocalName, ServiceUUIDs, and TX-power fields through BlueZ D-Bus.
+        # The phone can identify this Pi by its MAC address, and the UART GATT
+        # service is still discovered after the connection is established.
+        self.include_tx_power = False
 
 def find_adapter(bus):
     remote_om = dbus.Interface(bus.get_object(BLUEZ_SERVICE_NAME, '/'),
@@ -211,12 +211,33 @@ def ble_gatt_uart_loop(rx_q, tx_q, device_name='rpi-gatt-server', raw=False):
         "adv": adv,
     }
 
+    # These callbacks must close this server's GLib loop. The generic callbacks
+    # in utils_advertisement own a different loop and can therefore still be
+    # None when this module is used as a library.
+    def advertisement_registered():
+        print("BLE advertisement registered")
+        print("Connect to adapter {} from the phone".format(mac_address))
+
+    def advertisement_failed(error):
+        print("Failed to register advertisement: {}".format(error))
+        print("Check that no other BLE advertising program is already running.")
+        if mainloop.is_running():
+            mainloop.quit()
+
+    def application_registered():
+        print("GATT application registered")
+
+    def application_failed(error):
+        print("Failed to register GATT application: {}".format(error))
+        if mainloop.is_running():
+            mainloop.quit()
+
     service_manager.RegisterApplication(app.get_path(), {},
-                                        reply_handler=register_app_cb,
-                                        error_handler=register_app_error_cb)
+                                        reply_handler=application_registered,
+                                        error_handler=application_failed)
     ad_manager.RegisterAdvertisement(adv.get_path(), {},
-                                     reply_handler=register_ad_cb,
-                                     error_handler=register_ad_error_cb)
+                                     reply_handler=advertisement_registered,
+                                     error_handler=advertisement_failed)
     try:
         mainloop.run()
     finally:

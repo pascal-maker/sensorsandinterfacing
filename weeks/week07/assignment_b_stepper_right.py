@@ -24,6 +24,12 @@ def button_event(channel):
     global button_pressed
     button_pressed = GPIO.input(BUTTON_PIN) == GPIO.LOW
 
+    # Print only when the button changes state, not after every motor step.
+    if button_pressed:
+        print("GPIO 21 pressed: stepper turning right")
+    else:
+        print("GPIO 21 released: stepper stopped")
+
 
 def main():
     # BCM refers to GPIO numbers rather than physical header-pin numbers.
@@ -34,6 +40,8 @@ def main():
 
     # BOTH generates an interrupt when the button is pressed and released.
     GPIO.add_event_detect(BUTTON_PIN, GPIO.BOTH, callback=button_event)
+    print("Stepper-right test started")
+    print("Hold GPIO 21 to turn right; release it to stop. Press Ctrl+C to exit.")
     try:
         while True:
             if button_pressed:
