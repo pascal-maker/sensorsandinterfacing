@@ -43,30 +43,51 @@ class Keypad4x4:
             GPIO.output(col, GPIO.HIGH)#sets the columns to HIGH
 
     def scan(self):
-        # Column scanning:
-        #   1. Pull one column LOW
-        #   2. Read all 4 rows — a LOW reading means that key is pressed
-        #      (the pressed key connects its row wire to the driven-LOW column)
-        #   3. Restore the column HIGH before moving to the next one
-        # Returns a list of all keys currently pressed (supports multi-press).
-        pressed = []#list of pressed keys
-        for col_idx, col_pin in enumerate(self._cols):#iterates through the columns
-            GPIO.output(col_pin, GPIO.LOW)#drives the column LOW
-            # Give the electrical levels time to settle before reading rows.
+        """Scan every row/column intersection and return all pressed keys."""
+        # A 4x4 keypad contains 16 switches arranged as four rows crossing four
+        # columns. Pressing a key electrically joins one row to one column.
+        # Scanning lets eight wires identify 16 switches without giving every
+        # key its own GPIO input.
+
+        # All row inputs normally read HIGH because they use pull-up resistors.
+        # We test one column at a time by temporarily driving that column LOW.
+        # If a key in that column is held, its connected row is pulled LOW too.
+        pressed = []
+
+        # enumerate() supplies both the list position and its GPIO pin. The
+        # positions later select the corresponding entry in the KEYS table.
+        for col_idx, col_pin in enumerate(self._cols):
+            # Select only this column. Every other column remains HIGH.
+            GPIO.output(col_pin, GPIO.LOW)
+
+            # Allow the voltage to settle before sampling the row inputs. This
+            # short delay helps avoid false readings immediately after switching.
             time.sleep(0.001)
-            for row_idx, row_pin in enumerate(self._rows):#iterates through the rows
-                if GPIO.input(row_pin) == GPIO.LOW:#if the row is LOW
-                    pressed.append(self._keys[row_idx][col_idx])#adds the key to the list
-            GPIO.output(col_pin, GPIO.HIGH) # restore before scanning next column
+
+            for row_idx, row_pin in enumerate(self._rows):
+                # LOW means the selected column is connected to this row, so
+                # the key at their intersection is physically being pressed.
+                if GPIO.input(row_pin) == GPIO.LOW:
+                    pressed.append(self._keys[row_idx][col_idx])
+
+            # Deselect this column before testing the next one. Leaving it LOW
+            # could create incorrect readings when another column is scanned.
+            GPIO.output(col_pin, GPIO.HIGH)
+
+        # Usually this is empty or contains one key. A list also lets scan()
+        # report multiple simultaneous presses for programs that need them.
         return pressed
 
-    def get_key(self):#returns a single key if exactly one is pressed
-        # Returns None if nothing is pressed or if multiple keys are pressed at once
-        # (multi-press state is ambiguous so it is ignored).
-        pressed = self.scan()#scans the keypad
-        return pressed[0] if len(pressed) == 1 else None#returns the key if exactly one is pressed
+    def get_key(self):
+        """Return one unambiguous pressed key, or None."""
+        pressed = self.scan()
 
-    def cleanup(self):#cleans up the keypad
+        # Exactly one detected key is safe to return. No key and multiple keys
+        # both return None because this simple demo expects one press at a time.
+        return pressed[0] if len(pressed) == 1 else None
+
+    def cleanup(self):
+        """Restore GPIO pins to their default state when the program ends."""
         GPIO.cleanup()
 
 
@@ -76,29 +97,44 @@ def run_demo():
     print("Keypad ready — press keys (Ctrl+C to exit)")
     print("Layout: 123A / 456B / 789C / *0#D")
 
-    stable_key = None
-    candidate_key = None
-    candidate_since = time.monotonic()
-    debounce_seconds = 0.05
+    # Mechanical contacts bounce between connected and disconnected for a short
+    # time. These variables require a reading to remain unchanged for 50 ms.
+    stable_key = None       # Last accepted, debounced key state.
+    candidate_key = None    # New raw state that might become stable.
+    candidate_since = time.monotonic()  # When the candidate first appeared.
+    debounce_seconds = 0.05  # 50 ms is long enough to filter typical bounce.
 
     try:
         while True:
+            # raw_key is the immediate electrical result. It may briefly jump
+            # between a character and None while a physical contact bounces.
             raw_key = keypad.get_key()
+
+            # monotonic() measures elapsed time and cannot jump if the system
+            # clock is corrected while this program is running.
             now = time.monotonic()
 
-            # A raw value must stay unchanged for 50 ms before acceptance.
+            # When the raw reading changes, begin timing a new candidate.
             if raw_key != candidate_key:
                 candidate_key = raw_key
                 candidate_since = now
 
+            # Accept the candidate only if:
+            #   1. it differs from the last accepted state, and
+            #   2. it has remained unchanged for at least 50 ms.
             if (
                 candidate_key != stable_key
                 and now - candidate_since >= debounce_seconds
             ):
                 stable_key = candidate_key
+
+                # Print only confirmed presses. A confirmed None represents a
+                # release; accepting it rearms the next key press but prints
+                # nothing. Holding a key therefore produces only one message.
                 if stable_key is not None:
                     print(f"Key pressed: {stable_key}")
 
+            # Avoid a busy loop while keeping the keypad responsive.
             time.sleep(0.01)
     except KeyboardInterrupt:
         print("\nKeypad stopped")
