@@ -37,12 +37,12 @@ import time
 import threading
 
 # ── import all week classes ────────────────────────────────────────────────
-from week1.gpio_basics    import LED, Button
-from week4.pwm_adc        import ADS7830, RGBLed
-from week5.communication  import ServoMotor
-from week6.mpu6050        import MPU6050
-from week07.motors        import DCMotor
-from week3.bit_operations import BCDReader
+from weeks.week01.gpio_basics import LED, Button
+from weeks.week04.pwm_adc import ADS7830, RGBLed
+from weeks.week05.communication import ServoMotor
+from mpu6050 import MPU6050
+from weeks.week07.example.motors import DCMotor
+from weeks.week03.bit_operations import BCDReader
 
 # ── pin assignments ────────────────────────────────────────────────────────
 PIN_MODE_BTN   = 20
