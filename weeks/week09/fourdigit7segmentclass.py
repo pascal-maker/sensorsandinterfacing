@@ -17,22 +17,23 @@ class FourDigit7Segment:
     # Maps each character to the set of segments that must be ON to draw it.
     # Written for common-cathode where 1 = segment on.
     CATHODE_SEGMENTS = {
-        0: A|B|C|D|E|F,
-        1: B|C,
-        2: A|B|D|E|G,
-        3: A|B|C|D|G,
-        4: B|C|F|G,
-        5: A|C|D|F|G,
-        6: A|C|D|E|F|G,
-        7: A|B|C,
-        8: A|B|C|D|E|F|G,
-        9: A|B|C|D|F|G,
+        "0": A|B|C|D|E|F,
+        "1": B|C,
+        "2": A|B|D|E|G,
+        "3": A|B|C|D|G,
+        "4": B|C|F|G,
+        "5": A|C|D|F|G,
+        "6": A|C|D|E|F|G,
+        "7": A|B|C,
+        "8": A|B|C|D|E|F|G,
+        "9": A|B|C|D|F|G,
         "A": A|B|C|E|F|G,
         "B": C|D|E|F|G,
         "C": A|D|E|F,
         "D": B|C|D|E|G,
         "E": A|D|E|F|G,
         "F": A|E|F|G,
+        "-": G,
         " ": 0,   # blank — all segments off
     }
 
@@ -81,6 +82,7 @@ class FourDigit7Segment:
     def putValue(self, text, align="RIGHT"):#puts a value on the display
         # Store text (max 4 chars) in current_text, padded with spaces to fill 4 positions.
         text = str(text).upper()[:4]#stores the text
+        align = align.upper()
         if align == "LEFT":#checks the alignment
             self.current_text = text.ljust(4)#puts the text on the display
         else:#if the alignment is not left
@@ -90,6 +92,10 @@ class FourDigit7Segment:
         # Like putValue but uses a custom fill character instead of spaces,
         # e.g. fill_char="0" turns "42" into "0042".
         text = str(text).upper()[:4]#stores the text
+        fill_char = str(fill_char).upper()
+        if len(fill_char) != 1:
+            raise ValueError("fill_char must contain exactly one character")
+        align = align.upper()
         if align == "LEFT":#checks the alignment
             self.current_text = text.ljust(4, fill_char)#puts the text on the display
         else:#if the alignment is not left
@@ -98,17 +104,15 @@ class FourDigit7Segment:
     def setCounter(self, value, align="RIGHT"):#sets the counter to a given value
         # Set the counter to a given value and update the display immediately.
         self.counter = int(value)#sets the counter
-        self.putFilledValue(str(self.counter), fill_char="0", align="right")#puts the counter on the display
+        self.putFilledValue(str(self.counter), fill_char="0", align=align)#puts the counter on the display
 
     def increment(self):#increments the counter
         # Add 1 to the counter and refresh the display.
         self.counter += 1#increments the counter
-        self.putFilledValue(str(self.counter), fill_char="0", align="right")#puts the counter on the display
+        self.putFilledValue(str(self.counter), fill_char="0", align="RIGHT")#puts the counter on the display
 
     def decrement(self):#decrements the counter
         # Subtract 1 from the counter and refresh the display.
         self.counter -= 1#decrements the counter
-        self.putFilledValue(str(self.counter), fill_char="0", align="right")#puts the counter on the display
-        
-        
+        self.putFilledValue(str(self.counter), fill_char="0", align="RIGHT")#puts the counter on the display
         

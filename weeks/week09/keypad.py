@@ -5,16 +5,20 @@ import time
 # Rows are inputs held HIGH by 1kΩ pull-up resistors on the PCB.
 # When a key is pressed it physically connects that row wire to the driven column,
 # pulling the row LOW — that's how the Pi detects which key was pressed.
-ROWS = [16, 20, 21, 26]   # keypad pins 8, 7, 6, 5 (top row → bottom row)
-COLS = [19, 13,  6,  5]   # keypad pins 4, 3, 2, 1 (left col → right col)
+# This board's keypad connector is physically reversed relative to the cable's
+# printed pin order. Listing both groups in reverse maps the physical top-left
+# key to "1" instead of the bottom-right key "D".
+ROWS = [26, 21, 20, 16]   # input side of the keypad connector
+COLS = [5, 6, 13, 19]     # output side of the keypad connector
 
-# Key layout — each entry matches the physical position on the 4x4 membrane keypad.
-# KEYS[row][col] gives the character for the key at that intersection.
+# The connector's electrical row/column axes are transposed relative to the
+# printed keypad. This lookup is therefore the transpose of the printed layout;
+# the user still receives 123A / 456B / 789C / *0#D.
 KEYS = [
-    ['1', '2', '3', 'A'],  # top row
-    ['4', '5', '6', 'B'],  # second row
-    ['7', '8', '9', 'C'],  # third row
-    ['*', '0', '#', 'D'],  # bottom row
+    ['1', '4', '7', '*'],
+    ['2', '5', '8', '0'],
+    ['3', '6', '9', '#'],
+    ['A', 'B', 'C', 'D'],
 ]
 
 
@@ -48,6 +52,8 @@ class Keypad4x4:
         pressed = []#list of pressed keys
         for col_idx, col_pin in enumerate(self._cols):#iterates through the columns
             GPIO.output(col_pin, GPIO.LOW)#drives the column LOW
+            # Give the electrical levels time to settle before reading rows.
+            time.sleep(0.001)
             for row_idx, row_pin in enumerate(self._rows):#iterates through the rows
                 if GPIO.input(row_pin) == GPIO.LOW:#if the row is LOW
                     pressed.append(self._keys[row_idx][col_idx])#adds the key to the list
@@ -62,3 +68,43 @@ class Keypad4x4:
 
     def cleanup(self):#cleans up the keypad
         GPIO.cleanup()
+
+
+def run_demo():
+    """Print each debounced key once; used by both runnable keypad scripts."""
+    keypad = Keypad4x4()
+    print("Keypad ready — press keys (Ctrl+C to exit)")
+    print("Layout: 123A / 456B / 789C / *0#D")
+
+    stable_key = None
+    candidate_key = None
+    candidate_since = time.monotonic()
+    debounce_seconds = 0.05
+
+    try:
+        while True:
+            raw_key = keypad.get_key()
+            now = time.monotonic()
+
+            # A raw value must stay unchanged for 50 ms before acceptance.
+            if raw_key != candidate_key:
+                candidate_key = raw_key
+                candidate_since = now
+
+            if (
+                candidate_key != stable_key
+                and now - candidate_since >= debounce_seconds
+            ):
+                stable_key = candidate_key
+                if stable_key is not None:
+                    print(f"Key pressed: {stable_key}")
+
+            time.sleep(0.01)
+    except KeyboardInterrupt:
+        print("\nKeypad stopped")
+    finally:
+        keypad.cleanup()
+
+
+if __name__ == "__main__":
+    run_demo()

@@ -13,6 +13,7 @@ BUTTONS = [BTN_UP, BTN_DOWN, BTN_LEFT, BTN_RIGHT, JOY_CLICK]#we put the buttons 
 
 BLINK_PERIOD = 0.3#this is the period of the blink
 MOVE_DEBOUNCE = 0.18#this is the debounce time for the buttons
+JOY_DEBOUNCE = 0.05#joystick state must remain stable for 50 ms
 
 def setup_buttons():#this function sets up the buttons
     for btn in BUTTONS:#we loop through each button
@@ -30,6 +31,18 @@ def main():#this is the main function
     shift_reg = ShiftRegister()#we create a shift register object
     matrix = LedMatrix8x8(shift_reg)#we create a led matrix object
 
+    print("Week 09 LED-matrix drawing program started")
+    print("Use GPIO 20/21/26/16 to move and joystick GPIO 7 to draw.")
+    print("Press Ctrl+C to stop.")
+    print(
+        "Initial inputs: "
+        f"UP={GPIO.input(BTN_UP)} "
+        f"DOWN={GPIO.input(BTN_DOWN)} "
+        f"LEFT={GPIO.input(BTN_LEFT)} "
+        f"RIGHT={GPIO.input(BTN_RIGHT)} "
+        f"JOY={GPIO.input(JOY_CLICK)}"
+    )
+
     # cursor position on the 8x8 grid — (0,0) is top-left
     cursor_x = 0#the cursor x position
     cursor_y = 0#the cursor y position
@@ -38,7 +51,12 @@ def main():#this is the main function
     last_blink = time.time()     # timestamp of the last blink flip
     last_move = 0                # timestamp of the last cursor move (used for debouncing)
 
-    last_joy_state = GPIO.HIGH   # previous joystick click state — used to detect a falling edge (press event)
+    # Keep separate raw/candidate and accepted states for software debouncing.
+    # A new state must remain unchanged for JOY_DEBOUNCE seconds before it is
+    # accepted, preventing one physical click from toggling a pixel repeatedly.
+    joy_stable_state = GPIO.input(JOY_CLICK)
+    joy_candidate_state = joy_stable_state
+    joy_candidate_since = time.time()
 
     try:
         while True:
@@ -79,19 +97,30 @@ def main():#this is the main function
                     print("Move ->", (cursor_x, cursor_y))#prints the cursor position
 
             # --- Joystick click — toggle pixel (falling-edge detection) ---
-            joy_state = GPIO.input(JOY_CLICK)#gets the joystick state
+            joy_raw_state = GPIO.input(JOY_CLICK)#gets the current raw state
 
-            # HIGH→LOW transition means the button was just pressed (not held)
-            if last_joy_state == GPIO.HIGH and joy_state == GPIO.LOW:#checks if the joystick was just pressed
-                matrix.toggle_pixel(cursor_x, cursor_y)  # permanently flip the LED at the cursor
+            # Restart the stability timer whenever the electrical level changes.
+            if joy_raw_state != joy_candidate_state:
+                joy_candidate_state = joy_raw_state
+                joy_candidate_since = now
 
-                state = "ON" if matrix.get_pixel(cursor_x, cursor_y) else "OFF"#gets the state of the pixel
-                cursor_visible = True   # make cursor visible so you see where you just toggled
-                last_blink = now#updates the last blink time this evenbtually to make the red dot pernamant on the led matrix
+            # Accept a change only after it has stayed stable for 50 ms.
+            if (
+                joy_candidate_state != joy_stable_state
+                and now - joy_candidate_since >= JOY_DEBOUNCE
+            ):
+                joy_stable_state = joy_candidate_state
 
-                print(f"Toggled pixel {(cursor_x, cursor_y)} to {state}")#prints the pixel state
-
-            last_joy_state = joy_state#stores the joystick state for the next iteration's edge detection
+                # LOW is a confirmed press. A held button cannot trigger again;
+                # it must first return to a confirmed HIGH (released) state.
+                if joy_stable_state == GPIO.LOW:
+                    matrix.toggle_pixel(cursor_x, cursor_y)
+                    state = (
+                        "ON" if matrix.get_pixel(cursor_x, cursor_y) else "OFF"
+                    )
+                    cursor_visible = True
+                    last_blink = now
+                    print(f"Toggled pixel {(cursor_x, cursor_y)} to {state}")
 
             # --- Refresh display ---
             # Redraws the full matrix every loop, overlaying the blinking cursor at (cursor_x, cursor_y)

@@ -35,7 +35,7 @@ class ShiftRegister:#shift register class
             GPIO.output(self.ds, (byte >> i) & 1)#we set the data pin to the value of the current bit
             self.pulse(self.shcp)#we pulse the clock pin
 
-    def shift_out_16bit(self, value, direction=LSB_TO_MSB):#this function shifts out a 16-bit value
+    def shift_out_16bit(self, value, direction=MSB_TO_LSB):#this function shifts out a 16-bit value
         value &= 0xFFFF#we mask the value to 16 bits
 
         msb = (value >> 8) & 0xFF#we get the most significant bit

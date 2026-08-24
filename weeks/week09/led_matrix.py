@@ -18,20 +18,32 @@ class LedMatrix8x8:#creates the led matrix class
         self.row_data = [0x00] * 8#clears the led matrix
 
     def refresh_once(self, cursor_x=None, cursor_y=None, cursor_visible=False):# refreshes the led matrix once
-        for row in range(8):#loops through each row
-            row_byte = 1 << row#selects the row to be displayed
-            col_byte = self.row_data[row]#column data for the selected row
+        # The physical matrix is multiplexed one column at a time. row_data is
+        # stored in the convenient drawing format row_data[y], so each scan
+        # transposes one vertical column into an 8-bit row pattern.
+        for column in range(8):
+            row_byte = 0
 
-            if cursor_visible and cursor_y == row:#cursor overlay
-                col_byte ^= (1 << cursor_x)#cursor overlay
+            for row in range(8):
+                pixel_on = (self.row_data[row] >> column) & 1
 
-            col_byte = ~col_byte & 0xFF#inverts the column data
+                # XOR overlays the blinking cursor without permanently adding
+                # it to row_data. On a saved dot, the cursor visibly blinks it.
+                if cursor_visible and cursor_x == column and cursor_y == row:
+                    pixel_on ^= 1
 
-            value = (col_byte << 8) | row_byte#packs the column and row data together
+                if pixel_on:
+                    row_byte |= 1 << row
 
-            self.shift_register.shift_out_16bit(#shifts the data out to the shift register
-                value,#the value to be shifted out
-                direction=ShiftRegister.LSB_TO_MSB#sets the direction to LSB to MSB
+            # Matrix column selection is active-low. Begin at the leftmost
+            # selector (0x80), move right, and invert so only that column is LOW.
+            column_byte = ~(0x80 >> column) & 0xFF
+            value = (row_byte << 8) | column_byte
+
+            # The Freenove two-register cascade transmits both bytes MSB-first.
+            self.shift_register.shift_out_16bit(
+                value,
+                direction=ShiftRegister.MSB_TO_LSB,
             )
 
             time.sleep(self.ROW_DELAY)#pauses for the row delay
