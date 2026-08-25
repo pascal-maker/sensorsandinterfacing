@@ -37,7 +37,19 @@ python weeks/week09/assignment.py
 
 The program provides a blinking cursor on the 8×8 matrix. Four buttons move the
 cursor, and the joystick click toggles the selected pixel. A toggled pixel stays
-on after the cursor moves. Clicking it again erases it.
+on after the cursor moves. Clicking it again erases it. Each direction moves
+once per press; release the button before moving another step.
+
+Before running the assignment on a newly wired board, verify the controls:
+
+```bash
+python weeks/week09/input_test.py
+```
+
+Every value should start at `1`. Pressing exactly one control should change only
+its value to `0`, and releasing it should return it to `1`. If that works but the
+matrix orientation or dot movement is wrong, run `matrix_wiring_test.py` and
+note which mode moves correctly both vertically and horizontally.
 
 ### Keypad exercise
 
@@ -103,8 +115,8 @@ ShiftRegister.LSB_TO_MSB
 ```
 
 The default is MSB-to-LSB, which is used by the LED bar and seven-segment
-display. This board's two-register LED-matrix cascade also works MSB-first; its
-main difference is active-low column selection:
+display. The two-register LED-matrix cascade uses MSB-first shifting,
+active-high row data, and an active-low column selector:
 
 ```python
 shift_register.shift_out_16bit(

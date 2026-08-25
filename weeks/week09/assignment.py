@@ -1,4 +1,6 @@
 import time
+import threading
+import queue
 import RPi.GPIO as GPIO#import RPi.GPIO as GPIO so we can use its functions to control the shift register
 from shift_register import ShiftRegister#we import shift_register.py so we can use its functions
 from led_matrix import LedMatrix8x8#we import led_matrix.py so we can use its functions
@@ -12,15 +14,10 @@ JOY_CLICK = 7#this is the click button
 BUTTONS = [BTN_UP, BTN_DOWN, BTN_LEFT, BTN_RIGHT, JOY_CLICK]#we put the buttons in a list
 
 BLINK_PERIOD = 0.3#this is the period of the blink
-MOVE_DEBOUNCE = 0.18#this is the debounce time for the buttons
-JOY_DEBOUNCE = 0.05#joystick state must remain stable for 50 ms
 
 def setup_buttons():#this function sets up the buttons
     for btn in BUTTONS:#we loop through each button
         GPIO.setup(btn, GPIO.IN, pull_up_down=GPIO.PUD_UP)#we set the button to input and pull up to up
-
-def pressed(btn):#this function checks if a button is pressed
-    return GPIO.input(btn) == GPIO.LOW#we return true if the button is pressed
 
 def main():#this is the main function
     GPIO.setmode(GPIO.BCM)#we set the mode to BCM
@@ -48,89 +45,101 @@ def main():#this is the main function
     cursor_y = 0#the cursor y position
 
     cursor_visible = True        # controls whether the cursor LED is on right now (toggled for blinking)
-    last_blink = time.time()     # timestamp of the last blink flip
-    last_move = 0                # timestamp of the last cursor move (used for debouncing)
+    last_blink = time.monotonic()# timestamp of the last blink flip
+    press_queue = queue.SimpleQueue()
 
-    # Keep separate raw/candidate and accepted states for software debouncing.
-    # A new state must remain unchanged for JOY_DEBOUNCE seconds before it is
-    # accepted, preventing one physical click from toggling a pixel repeatedly.
-    joy_stable_state = GPIO.input(JOY_CLICK)
-    joy_candidate_state = joy_stable_state
-    joy_candidate_since = time.time()
+    def remember_press(pin):
+        press_queue.put(pin)
+
+    for pin in BUTTONS:
+        GPIO.add_event_detect(
+            pin,
+            GPIO.FALLING,
+            callback=remember_press,
+            bouncetime=150,
+        )
+
+    # Refresh the multiplexed display independently so input polling is never
+    # delayed by shifting a complete eight-row frame.
+    display_state = {
+        "cursor_x": cursor_x,
+        "cursor_y": cursor_y,
+        "cursor_visible": cursor_visible,
+    }
+    stop_display = threading.Event()
+
+    def refresh_display():
+        while not stop_display.is_set():
+            matrix.refresh_once(
+                display_state["cursor_x"],
+                display_state["cursor_y"],
+                display_state["cursor_visible"],
+            )
+
+    display_thread = threading.Thread(target=refresh_display, daemon=True)
+    display_thread.start()
 
     try:
         while True:
-            now = time.time()
+            now = time.monotonic()
 
             # --- Cursor blinking ---
             # Every BLINK_PERIOD seconds, flip cursor_visible so the cursor flashes on and off
             if now - last_blink > BLINK_PERIOD:#checks if the blink period has passed
                 cursor_visible = not cursor_visible#flips the cursor visibility
+                display_state["cursor_visible"] = cursor_visible
                 last_blink = now#updates the last blink time
 
-            # --- Button movement with debounce ---
-            # MOVE_DEBOUNCE prevents the cursor from flying across the grid when a button is held;
-            # only one move is registered per debounce window
-            if now - last_move > MOVE_DEBOUNCE:#checks if the move debounce has passed
-                moved = False#sets moved to false
+            try:
+                pressed_pin = press_queue.get_nowait()
+            except queue.Empty:
+                pressed_pin = None
 
-                if pressed(BTN_UP):#checks if the up button is pressed
-                    cursor_y = max(0, cursor_y - 1)  # clamp to top edge prevents going to high values we have 8 rows  -1 means top left value 0 is bottom left so when we minus 1 it goes to high values
-                    moved = True#sets moved to true
+            old_position = (cursor_x, cursor_y)
 
-                elif pressed(BTN_DOWN):#checks if the down button is pressed
-                    cursor_y = min(7, cursor_y + 1)  # clamp to bottom edge prevents going to low values we have 8 rows  -1 means top left value 0 is bottom left so when we add 1 it goes to low values
-                    moved = True#sets moved to true
+            if pressed_pin == BTN_UP:
+                cursor_y = max(0, cursor_y - 1)
+            elif pressed_pin == BTN_DOWN:
+                cursor_y = min(7, cursor_y + 1)
+            elif pressed_pin == BTN_LEFT:
+                cursor_x = max(0, cursor_x - 1)
+            elif pressed_pin == BTN_RIGHT:
+                cursor_x = min(7, cursor_x + 1)
 
-                elif pressed(BTN_LEFT):#checks if the left button is pressed
-                    cursor_x = max(0, cursor_x - 1)  # clamp to left edge we do -1 to maje sure it does not go beyond the left edge
-                    moved = True#sets moved to true
+            if (cursor_x, cursor_y) != old_position:
+                cursor_visible = True
+                display_state["cursor_x"] = cursor_x
+                display_state["cursor_y"] = cursor_y
+                display_state["cursor_visible"] = cursor_visible
+                last_blink = now
+                print("Move ->", (cursor_x, cursor_y))
 
-                elif pressed(BTN_RIGHT):#checks if the right button is pressed
-                    cursor_x = min(7, cursor_x + 1)  # clamp to right edge we do +1 to make sure it does not go beyond the right edge
-                    moved = True#sets moved to true
+            # LOW is a confirmed press. Holding the joystick button cannot
+            # trigger it again until it has first been released.
+            if pressed_pin == JOY_CLICK:
+                matrix.toggle_pixel(cursor_x, cursor_y)
+                state = "ON" if matrix.get_pixel(cursor_x, cursor_y) else "OFF"
+                cursor_visible = True
+                display_state["cursor_visible"] = cursor_visible
+                last_blink = now
+                print(f"Toggled pixel {(cursor_x, cursor_y)} to {state}")
 
-                if moved:#checks if the cursor was moved
-                    last_move = now#updates the last move time
-                    cursor_visible = True#makes the cursor visible
-                    last_blink = now#updates the last blink time
-                    print("Move ->", (cursor_x, cursor_y))#prints the cursor position
-
-            # --- Joystick click — toggle pixel (falling-edge detection) ---
-            joy_raw_state = GPIO.input(JOY_CLICK)#gets the current raw state
-
-            # Restart the stability timer whenever the electrical level changes.
-            if joy_raw_state != joy_candidate_state:
-                joy_candidate_state = joy_raw_state
-                joy_candidate_since = now
-
-            # Accept a change only after it has stayed stable for 50 ms.
-            if (
-                joy_candidate_state != joy_stable_state
-                and now - joy_candidate_since >= JOY_DEBOUNCE
-            ):
-                joy_stable_state = joy_candidate_state
-
-                # LOW is a confirmed press. A held button cannot trigger again;
-                # it must first return to a confirmed HIGH (released) state.
-                if joy_stable_state == GPIO.LOW:
-                    matrix.toggle_pixel(cursor_x, cursor_y)
-                    state = (
-                        "ON" if matrix.get_pixel(cursor_x, cursor_y) else "OFF"
-                    )
-                    cursor_visible = True
-                    last_blink = now
-                    print(f"Toggled pixel {(cursor_x, cursor_y)} to {state}")
-
-            # --- Refresh display ---
-            # Redraws the full matrix every loop, overlaying the blinking cursor at (cursor_x, cursor_y)
-            matrix.refresh_once(cursor_x, cursor_y, cursor_visible)#refreshes the led matrix once
+            # Poll controls at 200 Hz while the background thread refreshes
+            # the multiplexed matrix continuously.
+            time.sleep(0.005)
 
     except KeyboardInterrupt:#catches the keyboard interrupt
         # Ctrl+C raises KeyboardInterrupt; catch it here for a clean exit instead of a traceback
         print("Exiting...")#prints that the program is exiting
 
     finally:
+        stop_display.set()
+        display_thread.join(timeout=1)
+        for pin in BUTTONS:
+            try:
+                GPIO.remove_event_detect(pin)
+            except RuntimeError:
+                pass
         try:
             matrix.blank()#we blank the matrix
         except Exception:
