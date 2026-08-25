@@ -1,16 +1,12 @@
 """Record two buttons' press/release events and plot their states."""
 
-import csv
 from datetime import datetime
 from pathlib import Path
 import time
 
-import matplotlib#used for creating plots
-
-matplotlib.use("Agg")#agg is a non-interactive backend that is used to save plots to files
-import matplotlib.dates as mdates#the matplotlib.dates module is used to work with dates and times
-import matplotlib.pyplot as plt#the matplotlib.pyplot library is used to create plots
 from RPi import GPIO#the RPi.GPIO library is used to control the GPIO pins on a Raspberry Pi
+
+from csv_plotting import CSVStorage, TimeSeriesPlotter
 
 
 BUTTONS = {
@@ -20,6 +16,10 @@ BUTTONS = {
 
 DATA_DIR = Path(__file__).resolve().parent / "data"#creates the data directory
 events = []#list to store the events
+state_plotter = TimeSeriesPlotter(
+    "Button State Changes Over Time",
+    y_label="Button state",
+)
 
 
 def button_changed(channel):#callback function that is called when a button is pressed or released
@@ -35,16 +35,17 @@ def button_changed(channel):#callback function that is called when a button is p
 
 def save_csv(csv_path):#saves the events to a csv file
     """Save all recorded events to a CSV file."""
-    with csv_path.open("w", newline="", encoding="utf-8") as csv_file:#opens the csv file
-        writer = csv.writer(csv_file)#creates a csv writer object
-        writer.writerow(["Timestamp", "Button", "State"])#writes the header row
-
-        for timestamp, button_name, state in events:#iterates through the events
-            writer.writerow([
+    storage = CSVStorage(csv_path, ["Timestamp", "Button", "State"])
+    storage.overwrite(
+        [
+            [
                 timestamp.strftime("%Y-%m-%d %H:%M:%S.%f"),#formats the date and time to a string
                 button_name,
                 "PRESSED" if state == GPIO.LOW else "RELEASED",#checks if the button is pressed or released
-            ])
+            ]
+            for timestamp, button_name, state in events
+        ]
+    )
 
     print(f"Saved {len(events)} event(s) to {csv_path}")#prints that the data has been saved to the csv file
 
@@ -69,17 +70,13 @@ def save_plot(image_path):#saves the events to a png file
     times = [event[0] for event in events]#extract timestamps
     states = [event[2] for event in events]#extract states from events
 
-    fig, axis = plt.subplots(figsize=(10, 4))#create a figure and axis for the plot
-    axis.step(times, states, where="post", marker="o")#plot the button states
-    axis.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))#set the x-axis date formatter
-    axis.set_xlabel("Time")#set the x-axis label
-    axis.set_ylabel("Button state")#set the y-axis label
-    axis.set_title("Button State Changes Over Time")#set the title of the plot
-    axis.set_yticks([GPIO.LOW, GPIO.HIGH], ["Pressed", "Released"])#set the y-axis ticks
-    fig.autofmt_xdate()#auto formats the x-axis date tilts the x-axis labels do they dont overlap
-    fig.tight_layout()#adjusts the plot to prevent labels from overlapping
-    fig.savefig(image_path)#saves the figure 
-    plt.close(fig)#closes the figure to save memory
+    state_plotter.save(
+        image_path,
+        times,
+        states,
+        style="step",
+        y_ticks=([GPIO.LOW, GPIO.HIGH], ["Pressed", "Released"]),
+    )
 
     print(f"Saved plot to {image_path}")#prints that the data has been saved to the image file
 

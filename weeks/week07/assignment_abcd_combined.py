@@ -1,4 +1,15 @@
-"""Combined Week 07 assignments A, B, C, and D."""
+"""Combined Week 07 assignments A, B, C, and D.
+
+A: Hold GPIO 20 to turn the stepper left.
+B: Hold GPIO 21 to turn the stepper right.
+C: Press GPIO 16 to cycle the DC motor through OFF, LEFT, and RIGHT.
+   A potentiometer controls the DC motor speed.
+D: Press GPIO 26 to enable or disable the servo. When enabled, the joystick's
+   X-axis determines the servo position.
+
+Button presses are handled with GPIO events. The callbacks only update state;
+the main loop performs the motor and ADC operations.
+"""
 
 # Path and sys make the repository's shared hardware package importable.
 from pathlib import Path
@@ -31,24 +42,25 @@ servo_enabled = False
 
 
 def stepper_left_event(channel):
-    """Track both the press and release of the left stepper button."""
+    """Record whether the active-low left button is currently held."""
     global stepper_left_pressed
     stepper_left_pressed = GPIO.input(BUTTON_STEPPER_LEFT) == GPIO.LOW
 
 
 def stepper_right_event(channel):
-    """Track both the press and release of the right stepper button."""
+    """Record whether the active-low right button is currently held."""
     global stepper_right_pressed
     stepper_right_pressed = GPIO.input(BUTTON_STEPPER_RIGHT) == GPIO.LOW
 
 
 def servo_toggle_event(channel):
-    """Enable or disable joystick control after a button press."""
+    """Toggle joystick control of the servo after each button press."""
     global servo_enabled
     servo_enabled = not servo_enabled
 
 
 def main():
+    """Configure the hardware and continuously apply the selected controls."""
     # BCM selects GPIO numbers instead of physical header-pin numbers.
     GPIO.setwarnings(False)
     GPIO.setmode(GPIO.BCM)
@@ -80,7 +92,8 @@ def main():
         BUTTON_STEPPER_RIGHT, GPIO.BOTH, callback=stepper_right_event
     )
 
-    # These buttons toggle state once per debounced falling (press) edge.
+    # A falling edge occurs when an active-low button is pressed. Debouncing
+    # prevents one physical press from being interpreted as several presses.
     GPIO.add_event_detect(
         BUTTON_DC_MODE,
         GPIO.FALLING,
@@ -96,7 +109,8 @@ def main():
 
     try:
         while True:
-            # A/B: move only when exactly one stepper button is held.
+            # A/B: Move only when exactly one stepper button is held. If both
+            # buttons are pressed, stopping is safer than choosing a direction.
             if stepper_left_pressed and not stepper_right_pressed:
                 # Negative direction walks backward through the half-step table.
                 stepper.step(direction=-1)
@@ -107,11 +121,12 @@ def main():
                 # Stop when neither or both direction buttons are held.
                 stepper.release()
 
-            # C: continuously map potentiometer input 0..255 to speed 0..100%.
+            # C: Convert the 8-bit ADC reading (0..255) into PWM duty cycle
+            # (0..100%). The selected OFF/LEFT/RIGHT state comes from GPIO 16.
             potentiometer = adc.read_raw(POTENTIOMETER_CHANNEL)
             dc_motor.set_speed(potentiometer / 255 * 100)
 
-            # D: when enabled, map joystick X input 0..255 to servo angle 0..180°.
+            # D: When enabled, convert joystick X (0..255) to an angle (0..180°).
             if servo_enabled:
                 joystick_x = adc.read_raw(JOYSTICK_X_CHANNEL)
                 servo_angle = joystick_x / 255 * 180
@@ -119,6 +134,7 @@ def main():
             else:
                 joystick_x = None
                 servo_angle = None
+                # Stop sending servo pulses while control is switched off.
                 servo.release()
 
             # Console diagnostics allow testing even without external motor power.

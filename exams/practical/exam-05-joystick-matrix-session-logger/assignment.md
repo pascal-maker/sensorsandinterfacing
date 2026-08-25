@@ -6,8 +6,8 @@ Build a joystick-controlled 8×8 drawing application. A joystick moves a cursor,
 its push button draws or erases pixels, a separate button starts/stops a logging
 session, and every accepted action is written to CSV.
 
-This is an unsolved practice exam. Do not copy the completed Week 09 assignment;
-compose the reusable exam-kit classes and write the application logic yourself.
+Use `starter.py` when practising without help. A completed reference
+implementation is available in `solution.py` for checking your work afterward.
 
 ## Hardware
 

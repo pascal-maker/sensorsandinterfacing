@@ -17,11 +17,15 @@ GPIO.setmode(GPIO.BCM)
 for pin in BCD_PINS:
     GPIO.setup(pin, GPIO.IN, pull_up_down=GPIO.PUD_UP)
 
+# None guarantees that the first measured value is printed.
+previous_nibble = None
+
 try:
     # Poll the BCD counter continuously until the user presses Ctrl+C.
     while True:
         # Start with an empty four-bit value: 0000.
         nibble = 0
+        bit_readings = []
 
         # enumerate() supplies both the bit position (0-3) and GPIO pin.
         for bit_position, pin in enumerate(BCD_PINS):
@@ -32,29 +36,36 @@ try:
             # The assignment requires inversion because the inputs are active-low.
             inverted_bit = raw_bit ^ 1
 
-            # Display each input separately to help verify the circuit.
-            print(
-                f"Bit {bit_position} (GPIO {pin}): "
-                f"raw={raw_bit}, inverted={inverted_bit}"
-            )
+            # Save each reading so it can be printed if the value changed.
+            bit_readings.append((bit_position, pin, raw_bit, inverted_bit))
 
             # Move the bit to its binary position with <<, then combine it
             # with the existing nibble using bitwise OR (|).
             # Example for bit 2: 1 << 2 gives 0100.
             nibble |= inverted_bit << bit_position
 
-        # :04b formats the number as exactly four binary digits.
-        print(f"BCD nibble: {nibble:04b}")
+        # The optional extra: print only when the complete value changes.
+        if nibble != previous_nibble:
+            for bit_position, pin, raw_bit, inverted_bit in bit_readings:
+                print(
+                    f"Bit {bit_position} (GPIO {pin}): "
+                    f"raw={raw_bit}, inverted={inverted_bit}"
+                )
 
-        # One BCD nibble can represent only decimal digits 0 through 9.
-        # Binary values 1010 through 1111 are not valid BCD digits.
-        if nibble <= 9:
-            print(f"Decimal value: {nibble}")
-        else:
-            print(f"Invalid BCD value: {nibble}")
+            # :04b formats the number as exactly four binary digits.
+            print(f"BCD nibble: {nibble:04b}")
 
-        # Print a blank line between measurements and pause before polling again.
-        print()
+            # One BCD nibble can represent only decimal digits 0 through 9.
+            # Binary values 1010 through 1111 are not valid BCD digits.
+            if nibble <= 9:
+                print(f"Decimal value: {nibble}")
+            else:
+                print(f"Invalid BCD value: {nibble}")
+
+            print()
+            previous_nibble = nibble
+
+        # Pause briefly before polling again.
         time.sleep(POLL_INTERVAL)
 
 except KeyboardInterrupt:

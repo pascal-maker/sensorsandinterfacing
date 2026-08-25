@@ -1,4 +1,4 @@
-# Exam Copy Paste Kit
+ # Exam Copy Paste Kit
 
 This folder is a small parts bin for Raspberry Pi sensor/display exam questions.
 Import the helper classes you need, then adapt one matching example from `examples/`.
@@ -25,11 +25,13 @@ disable SPI or move the button pin in the code.
 - `button_toggle.py`: Button with debounced callback and toggle state.
 - `keypad_4x4.py`: Debounced 4×4 keypad scanner.
 - `csv_logger.py`: CSV writer that flushes immediately.
+- `csv_plotting.py`: Reusable CSV read/write storage and line/step plot classes.
 - `servo_motor.py`: 0–180° hobby-servo controller.
 - `active_buzzer.py`: Active buzzer on/off and beep patterns.
 - `shift_register.py`: 74HC595 helper.
 - `seven_segment_display.py`: Multiplexed 3- or 4-digit 7-segment display.
 - `led_bar_graph.py`: LED bar graph patterns.
+- `rgb_led.py`: Single-channel PWM and common-anode RGB LED classes.
 - `led_matrix_8x8.py`: 8x8 matrix refresh thread and graph/cursor helpers.
 
 ## Fast puzzle recipes
@@ -48,6 +50,40 @@ disable SPI or move the button pin in the code.
 3. Make output object: `SevenSegmentDisplay`, `LedBarGraph`, or `LedMatrix8x8`.
 4. Make `CSVLogger` if logging is required.
 5. Use `try/except KeyboardInterrupt/finally` and call `cleanup()`.
+
+For the three-potentiometer RGB assignment:
+
+```python
+from exams.copy_paste_kit.adc_reader import ADCReader
+from exams.copy_paste_kit.rgb_led import RGBLed
+
+adc = ADCReader()
+rgb = RGBLed(red_pin=5, green_pin=6, blue_pin=13, maximum_duty=95)
+
+rgb.set_color(adc.read(2), adc.read(3), adc.read(4))
+rgb.system_off()  # Faint glow: never completely off
+
+# In finally:
+rgb.stop()
+adc.close()
+```
+
+For saving a batch of records and plotting them, use the reusable data classes:
+
+```python
+from datetime import datetime
+
+from exams.copy_paste_kit.csv_plotting import CSVStorage, TimeSeriesPlotter
+
+storage = CSVStorage("data/values.csv", ["Timestamp", "Value"])
+storage.append([["2026-08-25 12:00:00", 42]])
+
+plotter = TimeSeriesPlotter("Sensor Values", y_label="Value")
+plotter.save("data/values.png", [datetime.now()], [42])
+```
+
+`CSVLogger` remains useful for writing and flushing one live measurement at a
+time. `CSVStorage` is intended for reading or saving batches of rows.
 
 ## Run an example
 

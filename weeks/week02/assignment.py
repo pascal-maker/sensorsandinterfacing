@@ -1,15 +1,12 @@
 import RPi.GPIO as GPIO
 import time
-import csv
 import os
 import threading
 from datetime import datetime
-import matplotlib
-matplotlib.use('Agg')  # headless-safe backend before pyplot is imported
-import matplotlib.pyplot as plt
-import matplotlib.dates as mdates
 import pandas as pd
 import gradio as gr
+
+from csv_plotting import CSVStorage, TimeSeriesPlotter
 
 # --------
 # config
@@ -18,6 +15,12 @@ BUTTON_PIN = 20#setting the pin number
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))#folder containing this script
 DATA_DIR = os.path.join(BASE_DIR, "data")#always use Week 2's data folder
 CSV_FILE = os.path.join(DATA_DIR, "btn_timings.csv")#setting the csv file path
+CSV_HEADERS = ["Timestamp", "Duration (s)"]
+csv_storage = CSVStorage(CSV_FILE, CSV_HEADERS)
+plotter = TimeSeriesPlotter(
+    "Button Press Durations Over Time",
+    y_label="Press Duration (s)",
+)
 
 GPIO.setmode(GPIO.BCM)#setting the mode to bcm
 GPIO.setup(BUTTON_PIN, GPIO.IN, pull_up_down=GPIO.PUD_UP)#setting the pin as an input with pull up resistor
@@ -62,37 +65,23 @@ GPIO.add_event_detect(
 def build_plot():
     """Regenerate plot from current CSV data and return the saved path."""
     plot_path = os.path.join(DATA_DIR, "btn_timings.png")#build the file path proply for the graph and saves it to the data folder in a .png format (with the .png extension it automatically formats it as a png file) than hardcoding the string showing how csv is defined
-    if not os.path.isfile(CSV_FILE):#checks if the csv file exists
+    rows = csv_storage.read_rows()
+    if not rows:
         return None
-    df = pd.read_csv(CSV_FILE)#reads the csv file
-    if df.empty:#checks if the csv file is empty
-        return None
-    times = pd.to_datetime(df["Timestamp"])#converts the timestamp column to datetime objects
-    durations = df["Duration (s)"]#retrieves the duration column
-    fig, ax = plt.subplots(figsize=(10, 4))#creates a figure and a set of subplots
-    ax.plot(times, durations, marker="o", linewidth=1, color="steelblue")#plots the data with a marker for each data point and a line connecting them
-    ax.xaxis.set_major_formatter(mdates.DateFormatter("%H:%M:%S"))#formats the x axis to show hours minutes and seconds without this matplotlib would show raw datetime numbers which are unreadable
-    fig.autofmt_xdate()#rotates the x-axis labels so theyt dont overlap each other
-    ax.set_xlabel("Time")#timestamps when each press happened
-    ax.set_ylabel("Press Duration (s)")#how long each press lasted in seconds
-    ax.set_title("Button Press Durations Over Time")#sets title of the graph
-    plt.tight_layout()# makes the plot look neat and tidy so the title and labels fit in the window
-    plt.savefig(plot_path)#saves the plot
-    plt.close()#closes the plot
-    return plot_path# returns the file path of the plot
+    times = pd.to_datetime([row["Timestamp"] for row in rows])
+    durations = [float(row["Duration (s)"]) for row in rows]
+    return plotter.save(plot_path, times, durations)
 
 def get_session_df():#creates a pandas dataframe from the current session records
     if not records:#checks if the records list is empty
-        return pd.DataFrame(columns=["Timestamp", "Duration (s)"])#returns an empty dataframe   
+        return pd.DataFrame(columns=CSV_HEADERS)#returns an empty dataframe
     return pd.DataFrame(
         [(ts.strftime("%Y-%m-%d %H:%M:%S"), round(dur, 3)) for ts, dur in records],#formats the timestamp and rounds the duration
         columns=["Timestamp", "Duration (s)"]#sets the column names
     )
 
 def get_csv_df():#gets the csv dataframe
-    if not os.path.isfile(CSV_FILE):#checks if the csv file exists
-        return pd.DataFrame(columns=["Timestamp", "Duration (s)"])
-    return pd.read_csv(CSV_FILE)#reads the csv file
+    return csv_storage.to_dataframe()
 
 # ----------------
 # Gradio UI
@@ -129,15 +118,11 @@ try:
 except KeyboardInterrupt:# if keyboard interrupt is received
     print("\nExiting...")# prints exit message
 finally:# append this session to CSV
-    file_needs_header = (
-        not os.path.isfile(CSV_FILE) or os.path.getsize(CSV_FILE) == 0
-    )#new or empty files need one header row
-    with open(CSV_FILE, "a", newline="") as file:#opens the csv file in append mode
-        writer = csv.writer(file)# creates a csv writer object
-        if file_needs_header:#do not add another header to an existing file
-            writer.writerow(["Timestamp", "Duration (s)"])#writes the header row
-        for ts, duration in records:#iterates through the records list
-            writer.writerow([ts.strftime("%Y-%m-%d %H:%M:%S"), round(duration, 3)])#formats the timestamp and rounds the duration
+    rows = [
+        [ts.strftime("%Y-%m-%d %H:%M:%S"), round(duration, 3)]
+        for ts, duration in records
+    ]
+    csv_storage.append(rows)
     print(f"Saved {len(records)} record(s) to {CSV_FILE}")#prints the number of records and the file path
 
     if records:#checks if there are any records
