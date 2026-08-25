@@ -23,7 +23,10 @@ disable SPI or move the button pin in the code.
 - `auto_off_timer.py`: Potentiometer-controlled auto-off/manual timer.
 - `joystick.py`: Joystick X/Y plus direction helper.
 - `button_toggle.py`: Button with debounced callback and toggle state.
+- `keypad_4x4.py`: Debounced 4×4 keypad scanner.
 - `csv_logger.py`: CSV writer that flushes immediately.
+- `servo_motor.py`: 0–180° hobby-servo controller.
+- `active_buzzer.py`: Active buzzer on/off and beep patterns.
 - `shift_register.py`: 74HC595 helper.
 - `seven_segment_display.py`: Multiplexed 3- or 4-digit 7-segment display.
 - `led_bar_graph.py`: LED bar graph patterns.

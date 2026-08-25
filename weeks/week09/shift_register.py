@@ -1,4 +1,3 @@
-import time
 import RPi.GPIO as GPIO#import RPi.GPIO as GPIO so we can use its functions to control the shift register
 
 DS = 22#data pin is used to send data to the shift register
@@ -19,9 +18,7 @@ class ShiftRegister:#shift register class
 
     def pulse(self, pin):#this function pulses the pin
         GPIO.output(pin, GPIO.HIGH)#we set the pin to high
-        time.sleep(0.000001)#we wait for 1 microsecond
         GPIO.output(pin, GPIO.LOW)#we set the pin to low
-        time.sleep(0.000001)#we wait for 1 microsecond
 
     def shift_byte_out(self, byte, direction=MSB_TO_LSB):#this function shifts out a byte
         byte &= 0xFF#we mask the byte to 8 bits
@@ -41,11 +38,10 @@ class ShiftRegister:#shift register class
         msb = (value >> 8) & 0xFF#we get the most significant bit
         lsb = value & 0xFF#we get the least significant bit
 
-        if direction == self.LSB_TO_MSB:#if the direction is least significant bit to most significant bit
-            self.shift_byte_out(lsb, direction)#we shift out the least significant bit
-            self.shift_byte_out(msb, direction)#we shift out the most significant bit
-        else:
-            self.shift_byte_out(msb, direction)#we shift out the most significant bit
-            self.shift_byte_out(lsb, direction)#we shift out the least significant bit
+        # The two cascaded registers always receive the high byte first and the
+        # low byte second. ``direction`` controls the order of bits within each
+        # byte; it must not also swap the two physical registers.
+        self.shift_byte_out(msb, direction)#we shift out the most significant byte
+        self.shift_byte_out(lsb, direction)#we shift out the least significant byte
 
         self.pulse(self.stcp)#we pulse the latch pin
