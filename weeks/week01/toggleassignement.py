@@ -8,6 +8,7 @@ GPIO.setmode(GPIO.BCM)#define pinnaming method
 GPIO.setup(btn,GPIO.IN,pull_up_down=GPIO.PUD_UP)#setting up the button as input with pull up resistor
 GPIO.setup(led,GPIO.OUT)#setting up the led as output
 led_on = False# we define led_on as false
+GPIO.output(led, led_on)#start with the LED explicitly switched off
 previous_btn_state = GPIO.HIGH# we define previous_btn_state as HIGH
 
 try:
@@ -24,6 +25,7 @@ try:
             
             time.sleep(0.2) # a debounce 
         previous_btn_state = current_btn_state# updating the previous state with the current state
+        time.sleep(0.01)#small polling delay prevents unnecessary CPU usage
            
 except KeyboardInterrupt:#ignoring the keyboard interrupt
     pass
@@ -38,4 +40,3 @@ finally:#cleaning up the GPIO pins
 #OUTPUT:#
 #HIGH = on#
 #LOW  = off#
-
