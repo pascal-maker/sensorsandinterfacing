@@ -99,9 +99,6 @@ if __name__ == "__main__":
     # The LED is connected to GPIO 17.
     led = LED(17)
 
-    # A basic button object for experimenting with is_pressed/fell/rose.
-    btn = Button(20)
-
     # Four-button multi-mode demo (same pins as week1/multibutton.py)
     btn1 = Button(20)   # LED on
     btn2 = Button(21)   # LED off
@@ -110,6 +107,7 @@ if __name__ == "__main__":
 
     mode = "off"
     previous_mode = None
+    last_toggle = time.monotonic()
 
     print("Demo started. Press Ctrl+C to stop safely.")
     print("GPIO 20=ON | GPIO 21=OFF | GPIO 16=FAST | GPIO 26=SLOW")
@@ -131,6 +129,7 @@ if __name__ == "__main__":
             if mode != previous_mode:
                 print(f"Mode: {previous_mode or 'startup'} -> {mode}")
                 previous_mode = mode
+                last_toggle = time.monotonic()
 
             # Perform the action belonging to the currently selected mode.
             if mode == "on":
@@ -138,9 +137,16 @@ if __name__ == "__main__":
             elif mode == "off":
                 led.off()
             elif mode == "blink_fast":
-                led.blink(0.1)
+                if time.monotonic() - last_toggle >= 0.1:
+                    led.toggle()
+                    last_toggle = time.monotonic()
             elif mode == "blink_slow":
-                led.blink(0.5)
+                if time.monotonic() - last_toggle >= 0.5:
+                    led.toggle()
+                    last_toggle = time.monotonic()
+
+            # Keep polling responsive without using all available CPU time.
+            time.sleep(0.01)
 
     except KeyboardInterrupt:
         # Ctrl+C is the normal way to stop this continuously running demo.

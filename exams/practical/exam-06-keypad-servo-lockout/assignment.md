@@ -6,7 +6,8 @@ Build a four-digit keypad lock. A correct code unlocks a servo temporarily.
 Three wrong attempts trigger an alarm and a timed lockout. Record every completed
 attempt to CSV without storing the secret code in the log.
 
-This is an unsolved practice exam.
+Use `starter.py` when practising without help. A completed reference
+implementation is available in `solution.py` for checking your work afterward.
 
 ## Hardware
 

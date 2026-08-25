@@ -10,8 +10,8 @@ Exam material is grouped by exam type and named for the hardware task it assesse
 | [Exam 2](practical/exam-02-potentiometer-matrix-logger/) | ADS7830 potentiometer logging, scrolling LED matrix, and saved graph | `solution.py` |
 | [Exam 3](practical/exam-03-potentiometer-matrix-retake/) | Potentiometer history, CSV logging, LED matrix, and display toggle | `solution.py` |
 | [Exam 4](practical/exam-04-bcd-seven-segment-auto-off-logger/) | BCD input, four-digit display, potentiometer auto-off, button, and CSV logging | `solution.py` |
-| [Practice Exam 5](practical/exam-05-joystick-matrix-session-logger/) | Joystick drawing, session toggle, matrix, and action logging | `starter.py` (unsolved) |
-| [Practice Exam 6](practical/exam-06-keypad-servo-lockout/) | Keypad access code, servo, alarm, lockout state machine, and privacy-safe logging | `starter.py` (unsolved) |
+| [Practice Exam 5](practical/exam-05-joystick-matrix-session-logger/) | Joystick drawing, session toggle, matrix, and action logging | `solution.py` |
+| [Practice Exam 6](practical/exam-06-keypad-servo-lockout/) | Keypad access code, servo, alarm, lockout state machine, and privacy-safe logging | `solution.py` |
 
 Exam 3 is the former `KhalilAhmadRetake.py`. It was renamed by topic and refactored into a class-based application. The original sample data is preserved under its `data/` directory.
 

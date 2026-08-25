@@ -66,37 +66,53 @@ def main():#this is the main function
         "cursor_y": cursor_y,
         "cursor_visible": cursor_visible,
     }
+    # This thread-safe event is used as a stop signal. The refresh thread keeps
+    # running while it is clear and exits after the main program calls set().
     stop_display = threading.Event()
 
     def refresh_display():
+        """Continuously multiplex the matrix using the latest cursor state."""
         while not stop_display.is_set():
+            # Only one matrix row/column is driven at a time. Repeating this
+            # refresh quickly makes the complete image appear continuously lit.
             matrix.refresh_once(
                 display_state["cursor_x"],
                 display_state["cursor_y"],
                 display_state["cursor_visible"],
             )
 
+    # Matrix refresh runs independently so button processing and blinking do
+    # not interrupt the rapid multiplexing. A daemon may exit with Python, but
+    # the finally block still stops and joins it properly.
     display_thread = threading.Thread(target=refresh_display, daemon=True)
     display_thread.start()
 
     try:
         while True:
+            # monotonic() is suitable for elapsed-time measurements because it
+            # cannot jump backward if the Raspberry Pi system clock changes.
             now = time.monotonic()
 
             # --- Cursor blinking ---
             # Every BLINK_PERIOD seconds, flip cursor_visible so the cursor flashes on and off
             if now - last_blink > BLINK_PERIOD:#checks if the blink period has passed
                 cursor_visible = not cursor_visible#flips the cursor visibility
+                # Share the new visibility with the matrix refresh thread.
                 display_state["cursor_visible"] = cursor_visible
                 last_blink = now#updates the last blink time
 
+            # Read one stored GPIO event without waiting. An empty queue simply
+            # means that no button has been pressed during this loop iteration.
             try:
                 pressed_pin = press_queue.get_nowait()
             except queue.Empty:
                 pressed_pin = None
 
+            # Remember the old coordinates so we can detect a real movement.
             old_position = (cursor_x, cursor_y)
 
+            # Matrix coordinates run from 0 to 7. max() and min() keep the
+            # cursor inside the 8x8 display when it reaches an edge.
             if pressed_pin == BTN_UP:
                 cursor_y = max(0, cursor_y - 1)
             elif pressed_pin == BTN_DOWN:
@@ -107,6 +123,8 @@ def main():#this is the main function
                 cursor_x = min(7, cursor_x + 1)
 
             if (cursor_x, cursor_y) != old_position:
+                # Show the cursor immediately after movement and restart its
+                # blink timer, even if it was in the invisible blink phase.
                 cursor_visible = True
                 display_state["cursor_x"] = cursor_x
                 display_state["cursor_y"] = cursor_y
@@ -117,8 +135,10 @@ def main():#this is the main function
             # LOW is a confirmed press. Holding the joystick button cannot
             # trigger it again until it has first been released.
             if pressed_pin == JOY_CLICK:
+                # Toggling draws an empty pixel or erases an existing pixel.
                 matrix.toggle_pixel(cursor_x, cursor_y)
                 state = "ON" if matrix.get_pixel(cursor_x, cursor_y) else "OFF"
+                # Make the cursor visible and restart blinking after drawing.
                 cursor_visible = True
                 display_state["cursor_visible"] = cursor_visible
                 last_blink = now
