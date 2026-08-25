@@ -5,6 +5,7 @@ Raspberry Pi coursework, hardware experiments, assignments, and exam-preparation
 ## Start here
 
 - Browse the weekly labs in [`weeks/`](weeks/).
+- Read the matching Week 01–09 handouts in [`theory/`](theory/).
 - Open the graded and larger applications in [`projects/`](projects/).
 - Use the practical exams, retake material, and reusable snippets in [`exams/`](exams/).
 - Read theory-exam notes in [`exams/theory/`](exams/theory/).
@@ -30,6 +31,7 @@ local implementations when writing the low-level driver is part of the lesson.
 │   ├── week08/                    Shift registers and buzzer project
 │   ├── week09/                    Displays, keypad, and LED matrix
 │   └── week11/                    RFID and camera exercises
+├── theory/                        Week 01–09 theory handouts, mapped by week
 ├── projects/
 │   ├── course-assignment/         Multi-screen LCD assignment
 │   └── data-visualization/        Dockerized hardware dashboard
